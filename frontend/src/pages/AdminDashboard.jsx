@@ -30,17 +30,22 @@ export default function AdminDashboard() {
   const handleViewCourse = (courseId) =>
     console.log("Viewing course:", courseId);
 
-  if (courses){
+  if (courses) {
     if (courses.length === 0) {
       content = (
-        <div className="text-center text-gray-500">
+        <div className="text-left text-gray-500 p-4 mt-8">
           No courses found. Start by creating a new course!
         </div>
       );
-    }
-    else {
+    } else {
       content = (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Continue to Create Course
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
             {courses.map((course) => (
               <div
                 key={course.id}
@@ -93,58 +98,43 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
+        </div>
+      );
+    }
 
-      )
-  }
-
-  return (
-    <div className="flex-1 overflow-auto bg-[#f6f7f7]">
-      {/* Main */}
-      <div className="px-6 pb-10 pt-6">
-        {/* Top content: left welcome + create card, right progress */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left column */}
-          <div className="lg:col-span-4">
-            <div className="mb-6">
-              <h1 className="text-lg font-semibold text-gray-900">
-                Welcome {user.role}!
-              </h1>
-              <p className="text-xs text-gray-600">Ready to build Course?</p>
-            </div>
-
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-[#d9f99d]">
-                <span className="text-xl font-bold text-[#1f4d45]">+</span>
+    return (
+      <div className="flex-1 overflow-auto bg-[#f6f7f7]">
+        {/* Main */}
+        <div className="px-6 pb-10 pt-6">
+          {/* Top content: left welcome + create card, right progress */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Left column */}
+            <div className="lg:col-span-4">
+              <div className="mb-6">
+                <h1 className="text-lg font-semibold text-gray-900">
+                  Welcome {user.role}!
+                </h1>
+                <p className="text-xs text-gray-600">Ready to build Course?</p>
               </div>
 
-              <h3 className="text-center text-sm font-semibold text-gray-900">
-                Create a Course
-              </h3>
-              <p className="mx-auto mt-2 max-w-[18rem] text-center text-xs text-gray-600">
-                Use this to create <br />
-                Modules and Lessons
-              </p>
-            </div>
-          </div>
-        </div>
+              <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+                <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-[#d9f99d]">
+                  <span className="text-xl font-bold text-[#1f4d45]">+</span>
+                </div>
 
-        {/* Continue to Create Course */}
-        <div className="mt-8">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900">
-              Continue to Create Course
-            </h2>
-            <a
-              href="#"
-              className="text-xs font-semibold text-gray-700 hover:text-gray-900"
-            >
-              View All
-            </a>
+                <h3 className="text-center text-sm font-semibold text-gray-900">
+                  Create a Course
+                </h3>
+                <p className="mx-auto mt-2 max-w-[18rem] text-center text-xs text-gray-600">
+                  Use this to create <br />
+                  Modules and Lessons
+                </p>
+              </div>
+            </div>
           </div>
           {content}
         </div>
       </div>
-    </div>
-  );
+    );
   }
 }
