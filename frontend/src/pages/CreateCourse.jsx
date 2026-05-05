@@ -5,7 +5,7 @@ export default function CreateCourse() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [currentStep, setCurrentStep] = useState(2); // default to Course Material like screenshots
+  const [currentStep, setCurrentStep] = useState(2);
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
@@ -28,6 +28,7 @@ export default function CreateCourse() {
 
   const [selectedModuleId, setSelectedModuleId] = useState(1);
   const [selectedLessonId, setSelectedLessonId] = useState(1);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const steps = useMemo(
     () => [
@@ -441,6 +442,98 @@ export default function CreateCourse() {
         </div>
       </div>
 
+      {/* Add Resources */}
+      <div className="mt-8">
+        <div className="text-[12px] font-semibold text-gray-900 mb-3">
+          Add Resources
+        </div>
+        <p className="text-[11px] text-gray-600 mb-4">
+          Supported files: Audio (MP3 and WAV), File (PDF)
+        </p>
+
+        <div className="space-y-4">
+          {uploadedFiles.map((file, idx) => (
+            <div key={idx} className="border border-gray-200 rounded-md p-4 bg-white">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="text-[11px] text-gray-500 mb-1">Added files({uploadedFiles.length})</div>
+                  <div className="text-[12px] font-semibold text-gray-900 mb-2">
+                    {file.name}
+                  </div>
+                  <div className={`text-[11px] flex items-center gap-1 ${
+                    file.status === 'success' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {file.status === 'success' ? (
+                      <>
+                        <span className="text-[14px]">✓</span>
+                        Successfully Uploaded
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[14px]">✕</span>
+                        Upload Failed. <a href="#" className="underline">Try Again</a>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <button
+                    type="button"
+                    className="p-2 hover:bg-gray-100 rounded"
+                    title="Edit"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 17.25V21h3.75L17.81 9.94m-4.75-4.75L19.5 7.5m-16.5 9.75l4.75-4.75" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                    className="p-2 hover:bg-gray-100 rounded"
+                    title="Delete"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z" fill="#666"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div className="border border-gray-200 rounded-md p-4 bg-white">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="text-[12px] font-semibold text-gray-900 mb-2">
+                  Add Resources
+                </div>
+                <p className="text-[11px] text-gray-600">
+                  Supported files: Audio (MP3 and WAV), File (PDF)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.mp3,.wav,.pdf';
+                  input.onchange = (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setUploadedFiles([...uploadedFiles, { name: file.name, status: 'success' }]);
+                    }
+                  };
+                  input.click();
+                }}
+                className="h-8 px-4 rounded-md bg-[#0F3D3A] text-white text-[11px] font-semibold hover:bg-[#0c312f] whitespace-nowrap"
+              >
+                Choose files
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Bottom buttons */}
       <div className="mt-8 flex justify-end gap-3">
         <button
@@ -511,7 +604,7 @@ export default function CreateCourse() {
                 setCourseData({ ...courseData, category: e.target.value })
               }
             >
-              <option value=""> </option>
+              <option value=""></option>
               <option value="tech">Technology</option>
               <option value="business">Business</option>
               <option value="design">Design</option>
@@ -652,7 +745,7 @@ export default function CreateCourse() {
               <StepTabs />
             </div>
 
-            {/* Layout like screenshots: sidebar + main */}
+            {/* Layout: sidebar + main */}
             <div className="mt-2 flex flex-col lg:flex-row gap-8">
               <Sidebar />
 

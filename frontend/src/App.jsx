@@ -1,72 +1,74 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+  Outlet,
+} from "react-router-dom";
+
 import Login from "./pages/Login";
-import MainLayout from "./layout/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+
+// Admin
 import AdminDashboard from "./pages/AdminDashboard";
-import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminOverview from "./pages/AdminOverview";
+import CreateCourse from "./pages/CreateCourse";
+import ManageEmployees from "./pages/ManageEmployees";
+import TrackProgress from "./pages/TrackProgress";
+import Analytics from "./pages/Analytics";
+import Dashboard from "./pages/Dashboard";
+import AssignCourse from "./pages/AssignCourse";
+
+// Employee
+import EmployeeDashboard from "./pages/EmployeeDashboard";
 import EmployeeOverview from "./pages/EmployeeOverview";
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <MainLayout />,
-    children: [
-      { index: true, element: <Login /> },
-      {
-        path: "admin",
-        element: (
-          <ProtectedRoute allowRoles={["admin"]}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        ),
-        children: [
-          { index: true, element: <AdminOverview /> }
-        ]
-      },
-      {
-        path: "employee",
-        element: (
-          <ProtectedRoute allowRoles={["employee"]}>
-            <EmployeeDashboard />
-          </ProtectedRoute>
-        ),
-        children: [
-          { index: true, element: <EmployeeOverview /> }
-        ]
-      }
-    ]
-  }
-]);
+// Layouts & Error
+import AdminLayout from "./layout/AdminLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   const router = createBrowserRouter(
     createRoutesFromElements(
-      <>
-        <Route path="/" element={<Login />} errorElement={<ErrorBoundary />} />
+      <Route path="/" element={<><Outlet /></>} errorElement={<ErrorBoundary />}>
         
-        {/* Admin Routes with Layout */}
-        <Route 
-          path="/admin/*" 
+        {/* Public Route */}
+        <Route index element={<Login />} />
+
+        {/* Admin Routes */}
+        <Route
+          path="admin"
           element={
-            <AdminLayout>
-              <Outlet />
-            </AdminLayout>
+            <ProtectedRoute allowRoles={["admin"]}>
+              <AdminLayout/>
+            </ProtectedRoute>
           }
-          errorElement={<ErrorBoundary />}
         >
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route index element={<AdminDashboard />} />
           <Route path="create-course" element={<CreateCourse />} />
           <Route path="manage-employees" element={<ManageEmployees />} />
+          <Route path="assign-course" element={<AssignCourse />} />
           <Route path="track-progress" element={<TrackProgress />} />
           <Route path="analytics" element={<Analytics />} />
-          <Route index element={<Dashboard />} />
         </Route>
-      </>
+
+        {/* Employee Routes */}
+        <Route
+          path="employee"
+          element={
+            <ProtectedRoute allowRoles={["employee"]}>
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<EmployeeOverview />} />
+        </Route>
+
+      </Route>
     )
   );
-  
-  return <RouterProvider router={router} />
+
+  return <RouterProvider router={router} />;
 }
 
-export default App
+export default App;
