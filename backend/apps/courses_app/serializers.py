@@ -12,6 +12,16 @@ class CourseSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Title cannot be empty")
         return value.strip()
 
+class CourseUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ["title", "description", "status"]
+    
+    def validate_title(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Title cannot be empty")
+        return value.strip()
+
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson

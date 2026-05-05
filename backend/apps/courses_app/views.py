@@ -7,11 +7,11 @@ from django.db import transaction
 
 from apps.admin_app.permissions import IsAdmin
 from .models import Course, Lesson
-from .serializers import CourseSerializer, LessonSerializer
+from .serializers import CourseSerializer, CourseUpdateSerializer, LessonSerializer
 
 class CourseViewSet(viewsets.ViewSet):
     def get_permissions(self):
-        if self.action in ["create", "publish"]:
+        if self.action in ["create", "publish", "partial_update"]:
             return [IsAuthenticated(), IsAdmin()]
         return [IsAuthenticated()]
     
@@ -42,6 +42,21 @@ class CourseViewSet(viewsets.ViewSet):
         course = get_object_or_404(Course, pk=pk)
         course.status = "published"
         course.save(update_fields=["status", "updated_at"])
+        return Response(CourseSerializer(course).data)
+    
+    def partial_update(self, request, pk=None):
+        course = get_object_or_404(Course, pk=pk)
+
+        serializer = CourseUpdateSerializer(
+            course,
+            data=request.data,
+            partial=True,
+        )
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        
+        serializer.save()
         return Response(CourseSerializer(course).data)
     
 class LessonViewSet(viewsets.ViewSet):
