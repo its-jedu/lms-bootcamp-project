@@ -5,7 +5,7 @@ export default function CreateCourse() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
-  const [currentStep, setCurrentStep] = useState(2);
+  const [currentStep, setCurrentStep] = useState(1);
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
@@ -208,7 +208,7 @@ export default function CreateCourse() {
         onClick={handleAddModule}
         className="w-full h-8 rounded-md border border-gray-200 bg-white text-[11px] font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
       >
-        <span className="text-[14px] leading-none">+</span> Add Module
+        <span className="text-[14px] leading-none">+</span> Add Lessons
       </button>
 
       <div className="mt-3 space-y-3">
@@ -319,67 +319,20 @@ export default function CreateCourse() {
 
   const CourseMaterialRight = () => (
     <div className="flex-1">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-[13px] font-semibold text-gray-900">
-            Course Structure
-          </div>
-          <div className="mt-1 text-[11px] text-gray-500">
-            Organise your course into modules and lessons
-          </div>
+      <div>
+        <div className="text-[13px] font-semibold text-gray-900">
+          Course Structure
         </div>
-
-        <button
-          type="button"
-          onClick={handleAddModule}
-          className="h-8 px-3 rounded-md border border-gray-200 bg-white text-[11px] font-semibold text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2"
-        >
-          <span className="text-[14px] leading-none">+</span> Add Module
-        </button>
+        <div className="mt-1 text-[11px] text-gray-500">
+          Organise lessons by course and add content
+        </div>
       </div>
 
-      {/* Module */}
+      {/* Lesson Title */}
       <div className="mt-6">
-        <div className="text-[12px] font-semibold text-gray-900 mb-2">
-          Module
+        <div className="text-[11px] text-gray-700 mb-2">
+          <span className="text-red-500">*</span>Lesson Title
         </div>
-
-        <div className="text-[11px] text-gray-700 mb-2">Module Title</div>
-        <input
-          value={selectedModule?.name ?? ""}
-          onChange={(e) => updateModule({ name: e.target.value })}
-          disabled={!selectedModule}
-          className="w-full h-9 px-3 border border-gray-300 rounded-md text-[12px] outline-none disabled:bg-gray-50"
-          placeholder="Module Title"
-        />
-
-        <div className="mt-4 text-[11px] text-gray-700 mb-2">
-          Enter Learning Objective
-        </div>
-        <textarea
-          value={selectedModule?.objective ?? ""}
-          onChange={(e) => updateModule({ objective: e.target.value })}
-          disabled={!selectedModule}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-[12px] outline-none resize-none disabled:bg-gray-50"
-        />
-      </div>
-
-      {/* Lessons */}
-      <div className="mt-6">
-        <div className="flex items-center justify-between">
-          <div className="text-[12px] font-semibold text-gray-900">Lessons</div>
-          <button
-            type="button"
-            onClick={handleAddLesson}
-            disabled={!selectedModule}
-            className="text-[11px] font-semibold text-gray-700 hover:text-gray-900 inline-flex items-center gap-2 disabled:opacity-50"
-          >
-            <span className="text-[14px] leading-none">+</span> Add Lesson
-          </button>
-        </div>
-
-        <div className="mt-4 text-[11px] text-gray-700 mb-2">Lesson Title</div>
         <input
           value={selectedLesson?.name ?? ""}
           onChange={(e) =>
@@ -389,110 +342,83 @@ export default function CreateCourse() {
           className="w-full h-9 px-3 border border-gray-300 rounded-md text-[12px] outline-none disabled:bg-gray-50"
           placeholder="Lesson Title"
         />
-
-        <div className="mt-4 text-[11px] text-gray-700 mb-2">
-          Enter Learning Objective
-        </div>
-        <textarea
-          value={selectedLesson?.objective ?? ""}
-          onChange={(e) =>
-            selectedLesson &&
-            updateLesson(selectedLesson.id, { objective: e.target.value })
-          }
-          disabled={!selectedLesson}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-[12px] outline-none resize-none disabled:bg-gray-50"
-        />
       </div>
 
-      {/* Add Content */}
+      {/* Add Lesson Content */}
+      <div className="mt-6">
+        <div className="text-[12px] font-semibold text-gray-900 mb-3">
+          Add Lesson Content
+        </div>
+
+        <div className="border border-gray-300 rounded-md bg-white">
+          <div className="border-b border-gray-200 px-3 py-2 flex items-center gap-2 flex-wrap text-[11px]">
+            <select className="px-2 py-1 border border-gray-300 rounded text-[11px]">
+              <option>Font</option>
+            </select>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded font-semibold">B</button>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded italic">I</button>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded underline">U</button>
+            <div className="w-px h-4 bg-gray-300"></div>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded">•</button>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded">1.</button>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded">→</button>
+          </div>
+          <div className="h-[200px] p-3"></div>
+        </div>
+      </div>
+
+      {/* Add Video */}
       <div className="mt-6">
         <div className="text-[12px] font-semibold text-gray-900 mb-2">
-          Add Content
+          Add Video - Embed Link
         </div>
-
-        <div className="flex flex-wrap gap-2">
-          {[
-            "Add Text",
-            "Add embed Code",
-            "Add File",
-            "Add Quiz",
-            "Add Audio",
-          ].map((label, idx) => (
-            <button
-              key={label}
-              type="button"
-              className={`h-7 px-3 rounded-md text-[10px] font-semibold border ${
-                idx === 0
-                  ? "bg-[#0F2F2A] text-white border-[#0F2F2A]"
-                  : "bg-[#d9f99d] text-[#0F2F2A] border-[#c7f36a]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Editor placeholder */}
-        <div className="mt-3 border border-gray-300 rounded-md bg-white">
-          <div className="h-[260px] w-full" />
-          <div className="border-t border-gray-200 px-3 py-2 text-[10px] text-gray-500">
-            Editor toolbar…
-          </div>
+        <p className="text-[10px] text-gray-600 mb-3">Embed from YouTube or Vimeo</p>
+        <div className="border border-gray-300 rounded-md p-3 bg-white">
+          <input
+            type="text"
+            placeholder="Paste video URL here"
+            className="w-full h-9 px-3 border border-gray-300 rounded-md text-[12px] outline-none"
+          />
+          <button
+            onClick={() => {}}
+            className="mt-2 text-[10px] text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
         </div>
       </div>
 
       {/* Add Resources */}
-      <div className="mt-8">
-        <div className="text-[12px] font-semibold text-gray-900 mb-3">
+      <div className="mt-6">
+        <div className="text-[12px] font-semibold text-gray-900 mb-2">
           Add Resources
         </div>
-        <p className="text-[11px] text-gray-600 mb-4">
-          Supported files: Audio (MP3 and WAV), File (PDF)
-        </p>
+        <p className="text-[10px] text-gray-600 mb-3">Supported files: Audio (MP3 and WAV), Files (PDF)</p>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {uploadedFiles.map((file, idx) => (
-            <div key={idx} className="border border-gray-200 rounded-md p-4 bg-white">
+            <div key={idx} className="border border-gray-200 rounded-md p-3 bg-white">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="text-[11px] text-gray-500 mb-1">Added files({uploadedFiles.length})</div>
-                  <div className="text-[12px] font-semibold text-gray-900 mb-2">
-                    {file.name}
-                  </div>
-                  <div className={`text-[11px] flex items-center gap-1 ${
-                    file.status === 'success' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {file.status === 'success' ? (
-                      <>
-                        <span className="text-[14px]">✓</span>
-                        Successfully Uploaded
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-[14px]">✕</span>
-                        Upload Failed. <a href="#" className="underline">Try Again</a>
-                      </>
-                    )}
-                  </div>
+                <div>
+                  <div className="text-[11px] text-gray-700">{file.name}</div>
                 </div>
-                <div className="flex items-center gap-2 ml-4">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="p-2 hover:bg-gray-100 rounded"
+                    className="p-1 hover:bg-gray-100 rounded"
                     title="Edit"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 17.25V21h3.75L17.81 9.94m-4.75-4.75L19.5 7.5m-16.5 9.75l4.75-4.75" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 17.25V21h3.75L17.81 9.94m-4.75-4.75L19.5 7.5" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
                   <button
                     type="button"
                     onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
-                    className="p-2 hover:bg-gray-100 rounded"
+                    className="p-1 hover:bg-gray-100 rounded"
                     title="Delete"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z" fill="#666"/>
                     </svg>
                   </button>
@@ -501,36 +427,75 @@ export default function CreateCourse() {
             </div>
           ))}
 
-          <div className="border border-gray-200 rounded-md p-4 bg-white">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="text-[12px] font-semibold text-gray-900 mb-2">
-                  Add Resources
-                </div>
-                <p className="text-[11px] text-gray-600">
-                  Supported files: Audio (MP3 and WAV), File (PDF)
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = '.mp3,.wav,.pdf';
-                  input.onchange = (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setUploadedFiles([...uploadedFiles, { name: file.name, status: 'success' }]);
-                    }
-                  };
-                  input.click();
-                }}
-                className="h-8 px-4 rounded-md bg-[#0F3D3A] text-white text-[11px] font-semibold hover:bg-[#0c312f] whitespace-nowrap"
-              >
-                Choose files
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = '.mp3,.wav,.pdf';
+              input.onchange = (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setUploadedFiles([...uploadedFiles, { name: file.name, status: 'success' }]);
+                }
+              };
+              input.click();
+            }}
+            className="w-full h-8 px-3 rounded-md bg-[#0F2F2A] text-white text-[11px] font-semibold hover:bg-[#0b241f]"
+          >
+            Choose files
+          </button>
+        </div>
+      </div>
+
+      {/* Courses Table */}
+      <div className="mt-8">
+        <div className="text-[12px] font-semibold text-gray-900 mb-2">
+          Course
+        </div>
+        <div className="text-[10px] text-gray-600 mb-3">
+          view all your draft and publishes courses
+        </div>
+
+        <div className="border border-gray-200 rounded-md overflow-hidden">
+          <table className="w-full text-[11px]">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Course Title</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-gray-200 hover:bg-gray-50">
+                <td className="px-4 py-3 text-gray-800">Course name</td>
+                <td className="px-4 py-3">
+                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-green-100 text-green-700">Published</span>
+                </td>
+                <td className="px-4 py-3">
+                  <button className="text-[10px] text-blue-600 hover:underline">Publish</button>
+                </td>
+              </tr>
+              <tr className="border-b border-gray-200 hover:bg-gray-50">
+                <td className="px-4 py-3 text-gray-800">Course name</td>
+                <td className="px-4 py-3">
+                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-blue-100 text-blue-700">Draft</span>
+                </td>
+                <td className="px-4 py-3">
+                  <button className="text-[10px] text-blue-600 hover:underline">Publish</button>
+                </td>
+              </tr>
+              <tr className="hover:bg-gray-50">
+                <td className="px-4 py-3 text-gray-800">Course name</td>
+                <td className="px-4 py-3">
+                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-blue-100 text-blue-700">Draft</span>
+                </td>
+                <td className="px-4 py-3">
+                  <button className="text-[10px] text-blue-600 hover:underline">Publish</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -541,114 +506,55 @@ export default function CreateCourse() {
           onClick={handleSaveDraft}
           className="h-8 px-4 rounded-md border border-gray-300 text-[11px] text-gray-700 hover:bg-gray-50"
         >
-          Save as Draft
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="h-8 px-6 rounded-md bg-[#0F2F2A] text-white text-[11px] font-semibold hover:bg-[#0b241f]"
-        >
-          Continue
+          Save
         </button>
       </div>
     </div>
   );
 
   const BasicInfo = () => (
-    <div className="max-w-5xl">
-      <div className="text-[13px] font-semibold text-gray-900 mb-1">
-        Basic Information
+    <div className="max-w-2xl">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <div className="text-[13px] font-semibold text-gray-900">
+            Basic Information
+          </div>
+          <div className="text-[11px] text-gray-500 mt-1">
+            Provide the basic course details below
+          </div>
+        </div>
+        <div className="text-[12px] text-gray-700">
+          <span className="font-semibold">Status:</span> <span className="text-gray-600">Draft</span>
+        </div>
       </div>
-      <div className="text-[11px] text-gray-500 mb-6">
-        Provide the basic course details below
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-5">
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-700 mb-2">
-              <span className="text-red-500">*</span> Course Title
-            </label>
-            <input
-              type="text"
-              className="w-full h-10 px-3 border border-gray-300 rounded-md bg-white text-[12px] outline-none"
-              value={courseData.title}
-              onChange={(e) =>
-                setCourseData({ ...courseData, title: e.target.value })
-              }
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-700 mb-2">
-              <span className="text-red-500">*</span> Course Description
-            </label>
-            <textarea
-              rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-[12px] outline-none resize-none"
-              value={courseData.description}
-              onChange={(e) =>
-                setCourseData({ ...courseData, description: e.target.value })
-              }
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-700 mb-2">
-              <span className="text-red-500">*</span> Course Category
-            </label>
-            <select
-              className="w-full h-10 px-3 border border-gray-300 rounded-md bg-white text-[12px] outline-none"
-              value={courseData.category}
-              onChange={(e) =>
-                setCourseData({ ...courseData, category: e.target.value })
-              }
-            >
-              <option value=""></option>
-              <option value="tech">Technology</option>
-              <option value="business">Business</option>
-              <option value="design">Design</option>
-            </select>
-          </div>
+      <div className="space-y-5">
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-700 mb-2">
+            <span className="text-red-500">*</span>Course Title
+          </label>
+          <input
+            type="text"
+            className="w-full h-10 px-3 border border-gray-300 rounded-md bg-white text-[12px] outline-none"
+            value={courseData.title}
+            onChange={(e) =>
+              setCourseData({ ...courseData, title: e.target.value })
+            }
+          />
         </div>
 
         <div>
           <label className="block text-[11px] font-semibold text-gray-700 mb-2">
-            <span className="text-red-500">*</span> Course Thumbnail
+            <span className="text-red-500">*</span>Course Description
           </label>
-
-          <div className="border border-green-300 bg-green-100/70 rounded-md p-4">
-            <div className="h-[92px] flex items-center justify-center">
-              {thumbnailPreview ? (
-                <img
-                  src={thumbnailPreview}
-                  alt="Preview"
-                  className="w-full h-[92px] object-cover rounded"
-                />
-              ) : (
-                <div className="text-center">
-                  <p className="text-[10px] text-gray-600 mb-2">
-                    Upload Image .jpeg, .png
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-8 h-9 rounded-full bg-[#0F2F2A] text-white text-[12px] font-semibold hover:bg-[#0b241f]"
-                  >
-                    Upload
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept="image/*"
-              onChange={handleThumbnailChange}
-            />
-          </div>
+          <textarea
+            rows={5}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-[12px] outline-none resize-none"
+            value={courseData.description}
+            onChange={(e) =>
+              setCourseData({ ...courseData, description: e.target.value })
+            }
+          />
         </div>
       </div>
 
@@ -737,19 +643,23 @@ export default function CreateCourse() {
       <div className="px-8 pb-10 pt-4">
         <div className="max-w-6xl mx-auto bg-white border border-gray-200 rounded-md">
           <div className="px-10 pt-8 pb-8">
-            <div className="text-[15px] font-semibold text-gray-900">
-              {steps[currentStep - 1]?.name ?? "Create Course"}
-            </div>
+            {currentStep !== 1 && (
+              <>
+                <div className="text-[15px] font-semibold text-gray-900">
+                  {steps[currentStep - 1]?.name ?? "Create Course"}
+                </div>
 
-            <div className="mt-4">
-              <StepTabs />
-            </div>
+                <div className="mt-4">
+                  <StepTabs />
+                </div>
+              </>
+            )}
 
             {/* Layout: sidebar + main */}
-            <div className="mt-2 flex flex-col lg:flex-row gap-8">
-              <Sidebar />
+            <div className={currentStep === 1 ? "" : "mt-2 flex flex-col lg:flex-row gap-8"}>
+              {currentStep !== 1 && <Sidebar />}
 
-              <div className="flex-1">
+              <div className={currentStep === 1 ? "" : "flex-1"}>
                 {currentStep === 1 && <BasicInfo />}
                 {currentStep === 2 && <CourseMaterialRight />}
                 {currentStep === 3 && <Review />}
