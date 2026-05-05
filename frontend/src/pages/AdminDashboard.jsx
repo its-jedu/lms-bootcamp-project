@@ -5,13 +5,8 @@ import useAuth from "@/auth/useAuth";
 export default function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [selectedCourse, setSelectedCourse] = useState("all");
-  const statsData = [
-    { label: "Number of Employees Enrolled", value: "3" },
-    { label: "Number of Employees Completed", value: "4" },
-    { label: "Number of Employees Inprogress", value: "4" },
-    { label: "Number of Employees Not Started", value: "1" },
-  ];
+
+  
   const courses = [
     {
       id: 1,
