@@ -32,10 +32,9 @@ class LogoutTests(TestCase):
         # Refresh token linked to access token of user
         refresh_token = str(RefreshToken.for_user(self.employee_user))
 
+        self.client.cookies["refresh_token"] = refresh_token  
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.employee_token}')
-        response = self.client.post('/api/auth/logout/', {
-            'refresh': refresh_token
-        }, format='json')
+        response = self.client.post('/api/auth/logout/')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('message', response.data)
