@@ -16,6 +16,7 @@ import CreateCourse from "./pages/CreateCourse";
 import ManageEmployees from "./pages/ManageEmployees";
 import TrackProgress from "./pages/TrackProgress";
 import Analytics from "./pages/Analytics";
+import Course from "./pages/Course";
 
 // Employee
 import EmployeeDashboard from "./pages/EmployeeDashboard";
@@ -45,6 +46,7 @@ function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="create-course" element={<CreateCourse />} />
+          <Route path="course/:courseId" element={<Course />} />
           <Route path="manage-employees" element={<ManageEmployees />} />
           <Route path="track-progress" element={<TrackProgress />} />
           <Route path="analytics" element={<Analytics />} />
