@@ -191,6 +191,15 @@ class LessonAPITests(TestCase):
         self.assertEqual(lesson_three.order, 1)
         self.assertEqual(lesson_one.order, 2)
         self.assertEqual(lesson_two.order, 3)
+
+        list_response = self.client.get(
+        f"/api/courses/{self.course.id}/lessons/")
+
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [lesson["id"] for lesson in list_response.data],
+            [lesson_three.id, lesson_one.id, lesson_two.id],
+        )
     
     def test_employee_cannot_reorder_lessons(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
