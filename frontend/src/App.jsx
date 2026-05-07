@@ -12,19 +12,44 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin
 import AdminDashboard from "./pages/AdminDashboard";
-import CreateCourse from "./pages/CreateCourse";
-import ManageEmployees from "./pages/ManageEmployees";
-import AssignCourse from "./pages/AssignCourse";
-import TrackProgress from "./pages/TrackProgress";
-import Analytics from "./pages/Analytics";
+import EmployeeLayout from "./pages/employee/EmployeeLayout";
+import AdminOverview from "./pages/AdminOverview";
+import EmployeeCourses from "./pages/employee/EmployeeCourses";
+import EmployeeOverview from "./pages/employee/EmployeeOverview"
+import {courseData} from "./pages/employee/courseData.js"
 
-// Employee
-import EmployeeDashboard from "./pages/EmployeeDashboard";
-import EmployeeOverview from "./pages/EmployeeOverview";
-
-// Layouts & Error
-import AdminLayout from "./layout/AdminLayout";
-import ErrorBoundary from "./components/ErrorBoundary";
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <MainLayout />,
+    children: [
+      { index: true, element: <Login /> },
+      {
+        path: "admin",
+        element: (
+          <ProtectedRoute allowRoles={["admin"]}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        ),
+        children: [
+          { index: true, element: <AdminOverview /> }
+        ]
+      },
+      {
+        path: "employee",
+        element: (
+          <ProtectedRoute allowRoles={["employee"]}>
+            <EmployeeLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          { index: true, element: <EmployeeOverview courseData={courseData} /> },
+          { path: "courses", element: <EmployeeCourses courseData={courseData} /> },
+        ]
+      }
+    ]
+  }
+]);
 
 function App() {
   const router = createBrowserRouter(
