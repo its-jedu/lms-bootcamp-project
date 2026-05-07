@@ -9,11 +9,16 @@ const axiosInstance = axios.create({
   withCredentials: true, // send cookies
 });
 
-// Store access token in memory
+// Store access token in memory and localStorage
 let accessToken = null;
 
 export const setAccessToken = (token) => {
   accessToken = token;
+  if (token) {
+    localStorage.setItem("access_token", token);
+  } else {
+    localStorage.removeItem("access_token");
+  }
 };
 
 // Request interceptor (attach token)

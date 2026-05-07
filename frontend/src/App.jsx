@@ -12,7 +12,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // Admin
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminOverview from "./pages/AdminOverview";
 import CreateCourse from "./pages/CreateCourse";
 import ManageEmployees from "./pages/ManageEmployees";
 import TrackProgress from "./pages/TrackProgress";

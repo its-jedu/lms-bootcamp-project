@@ -22,3 +22,73 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+class Lesson(models.Model):
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="lessons",
+    )
+    title = models.CharField(max_length=255)
+    objective = models.TextField(blank=True, default="")
+    order = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "lessons"
+        ordering = ["order", "created_at"]
+    
+    def __str__(self):
+        return self.title
+
+class Material(models.Model):
+    MATERIAL_TYPE_CHOICES = [
+        ("pdf", "PDF"),
+        ("audio", "AUDIO"),
+        ("text", "TEXT"),
+        ("video", "VIDEO"),        
+    ]
+
+    lesson = models.ForeignKey(
+        Lesson,
+        on_delete=models.CASCADE,
+        related_name="materials"
+    )
+    
+    material_type = models.CharField(max_length=20, choices=MATERIAL_TYPE_CHOICES)
+    file = models. FileField(upload_to="course_material/")
+    filename = models.CharField(max_length=255)
+    text_content = models.TextField(blank=True, default="")
+    video_url = models.URLField(blank=True, default="")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "lesson_materials"
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return self.filename
+
+class CourseAssignment(models.Model):
+    employee = models.ForeignKey(
+        "auth_app.User",
+        on_delete=models.CASCADE,
+        related_name="course_assignments"
+    )
+    
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="employee_assignments"
+    )
+
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "course_assignments"
+        unique_together = ("employee", "course")
+
+    def __str__(self):
+        return f"{self.employee.email} -> {self.course.title}"
