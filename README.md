@@ -397,29 +397,12 @@ Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
 
-**Request (Option 1 - Auto generate password):**
+**Request:**
 
 ```json
 {
-  "first_name": "John",
-  "last_name": "Doe",
-  "email": "john.doe@example.com",
-  "phone_number": "+1234567890",
-  "position": "Software Developer",
-  "password_option": "auto"
-}
-```
-
-**Request (Option 2 - Lastname as password):**
-
-```json
-{
-  "first_name": "Jane",
-  "last_name": "Smith",
-  "email": "jane.smith@example.com",
-  "phone_number": "+1987654321",
-  "position": "UI Designer",
-  "password_option": "lastname"
+  "name": "John Doe",
+  "email": "john.doe@example.com"
 }
 ```
 
@@ -428,14 +411,20 @@ Content-Type: application/json
 ```json
 {
   "id": 4,
-  "first_name": "John",
-  "last_name": "Doe",
+  "name": "John Doe",
   "email": "john.doe@example.com",
-  "phone_number": "+1234567890",
-  "position": "Software Developer",
   "role": "employee",
   "generated_password": "aB3$xY9@",
   "message": "Employee created successfully. Password is: aB3$xY9@"
+}
+```
+
+**Error Response (422 Unprocessable Entity):**
+
+```json
+{
+  "email": ["User with this email already exists"],
+  "name": ["Please provide both first and last name"]
 }
 ```
 
@@ -513,264 +502,18 @@ Content-Type: application/json
 }
 ```
 
-### 9. Update Course / Publish Toggle
-
-**Endpoint:** `PATCH /api/courses/{course_id}/`
-
-**Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
-**Request:**
-
-```json
-{
-  "status": "published"
-}
-```
-
-To unpublish a course:
-
-```json
-{
-  "status": "draft"
-}
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "id": 1,
-  "title": "Updated Course Title",
-  "description": "Updated course description",
-  "status": "published",
-  "created_at": "2026-04-08T10:00:00Z",
-  "updated_at": "2026-04-08T12:00:00Z"
-}
-```
-
-**Notes:**
-
-- New courses are created as `draft` by default.
-- Valid course status values are `draft` and `published`.
-- Admin users can view all courses.
-- Employee users can only view published courses.
-
-### 10. List Course Lessons
-
-**Endpoint:** `GET /api/courses/{course_id}/lessons/`
-
-**Requires:** authenticated user
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-```
-
-**Response (200 OK):**
-
-```json
-[
-  {
-    "id": 1,
-    "course": 3,
-    "title": "Introduction to Python",
-    "objective": "Understand the course structure",
-    "order": 1,
-    "created_at": "2026-04-08T10:00:00Z",
-    "updated_at": "2026-04-08T10:00:00Z"
-  },
-  {
-    "id": 2,
-    "course": 3,
-    "title": "Data Analysis",
-    "objective": "Handle and analyze data",
-    "order": 2,
-    "created_at": "2026-04-08T10:10:00Z",
-    "updated_at": "2026-04-08T10:10:00Z"
-  }
-]
-```
-
-**Notes:**
-
-- Lessons are returned in ascending `order`.
-- Admin users can view lessons for draft and published courses.
-- Employee users can only view lessons if the course is published.
-
-### 11. Create Lesson
-
-**Endpoint:** `POST /api/courses/{course_id}/lessons/`
-
-**Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
-**Request:**
-
-```json
-{
-  "title": "Introduction",
-  "objective": "Understand the course structure"
-}
-```
-
-**Response (201 Created):**
-
-```json
-{
-  "id": 1,
-  "course": 3,
-  "title": "Introduction",
-  "objective": "Understand the course structure",
-  "order": 1,
-  "created_at": "2026-04-08T10:00:00Z",
-  "updated_at": "2026-04-08T10:00:00Z"
-}
-```
-
-**Notes:**
-
-- `order` is assigned automatically.
-- New lessons are added to the end of the course.
-
-### 12. Update Lesson
-
-**Endpoint:** `PATCH /api/courses/{course_id}/lessons/{lesson_id}/`
-
-**Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
-**Request:**
-
-```json
-{
-  "title": "Updated Lesson Title",
-  "objective": "Updated learning objective"
-}
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "id": 1,
-  "course": 3,
-  "title": "Updated Lesson Title",
-  "objective": "Updated learning objective",
-  "order": 1,
-  "created_at": "2026-04-08T10:00:00Z",
-  "updated_at": "2026-04-08T11:00:00Z"
-}
-```
-
-### 13. Delete Lesson
-
-**Endpoint:** `DELETE /api/courses/{course_id}/lessons/{lesson_id}/`
-
-**Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-```
-
-**Response:** `204 No Content`
-
-### 14. Reorder Lessons
-
-**Endpoint:** `PATCH /api/courses/{course_id}/lessons/reorder/`
-
-**Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
-**Request:**
-
-```json
-{
-  "lesson_ids": [3, 1, 2]
-}
-```
-
-**Response (200 OK):**
-
-```json
-[
-  {
-    "id": 3,
-    "course": 3,
-    "title": "Final Quiz",
-    "objective": "",
-    "order": 1,
-    "created_at": "2026-04-08T10:30:00Z",
-    "updated_at": "2026-04-08T11:00:00Z"
-  },
-  {
-    "id": 1,
-    "course": 3,
-    "title": "Introduction to Python",
-    "objective": "",
-    "order": 2,
-    "created_at": "2026-04-08T10:00:00Z",
-    "updated_at": "2026-04-08T11:00:00Z"
-  },
-  {
-    "id": 2,
-    "course": 3,
-    "title": "Data Analysis",
-    "objective": "",
-    "order": 3,
-    "created_at": "2026-04-08T10:10:00Z",
-    "updated_at": "2026-04-08T11:00:00Z"
-  }
-]
-```
-
-**Notes:**
-
-- Send `lesson_ids` in the desired display order.
-- Duplicate lesson IDs are not allowed.
-- All lesson IDs must belong to the selected course.
-
 ---
 
 ## EMPLOYEE ENDPOINTS (Requires role=employee)
 
-### 15. Get Employee Profile
+### 9. Get Employee Profile
 
 **Endpoint:** `GET /api/employee/profile`
 
 **Headers:**
 
 ```
-
 Authorization: Bearer <access_token>
-
 ```
 
 **Response (200 OK):**
@@ -788,7 +531,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### 16. Update Employee Profile
+### 10. Update Employee Profile
 
 **Endpoint:** `PUT /api/employee/profile`
 
@@ -827,7 +570,7 @@ Content-Type: application/json
 }
 ```
 
-### 17. Change Employee Password
+### 11. Change Employee Password
 
 **Endpoint:** `POST /api/employee/change-password`
 
@@ -888,11 +631,9 @@ Content-Type: application/json
 ```json
 {
   "email": ["User with this email already exists"],
-  "last_name": ["Lastname is required"]
+  "name": ["Please provide both first and last name"]
 }
 ```
-
----
 
 ## STATUS CODES SUMMARY
 
