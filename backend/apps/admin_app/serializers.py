@@ -7,6 +7,12 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'email', 'phone_number', 'position', 'role', 'created_at']
         read_only_fields = ['id', 'role', 'created_at']
 
+class EmployeeListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number', 'position', 'role', 'created_at']
+        read_only_fields = ['id', 'role', 'created_at']
+
 class CreateEmployeeSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     email = serializers.EmailField()
@@ -22,6 +28,19 @@ class CreateEmployeeSerializer(serializers.Serializer):
         if len(name_parts) < 2:
             raise serializers.ValidationError("Please provide both first and last name")
         return value
+
+class EmployeeDeleteSerializer(serializers.Serializer):
+    # Allows multiple/mass deletion
+    employee_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False
+    )
+
+    def validate_employee_ids(self, value):
+        unique_ids = list(dict.fromkeys(value))
+        if not unique_ids:
+            raise serializers.ValidationError("employee_ids must be a non-empty list.")
+        return unique_ids
 
 class DashboardSerializer(serializers.Serializer):
     total_courses = serializers.IntegerField()

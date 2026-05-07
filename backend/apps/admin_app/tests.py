@@ -118,3 +118,53 @@ class AdminAccessTests(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['title'], 'Course 1')
         self.assertEqual(response.data[0]['status'], 'draft')
+
+    # Employee list and deletion
+    def test_admin_can_list_employees_for_selection(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        response = self.client.get("/api/admin/employees/list/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+
+    def test_admin_can_bulk_delete_employees(self):
+        employee_1 = User.objects.create_user(
+            email="employee3@example.com",
+            password="pass123",
+            role="employee"
+        )
+        employee_2 = User.objects.create_user(
+            email="employee4@example.com",
+            password="pass123",
+            role="employee"
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        response = self.client.delete(
+            "/api/admin/employees/delete/",
+            {"employee_ids": [employee_1.id, employee_2.id]},
+            format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["deleted_count"], 2)
+        self.assertFalse(User.objects.filter(id=employee_1.id).exists())
+        self.assertFalse(User.objects.filter(id=employee_2.id).exists())
+
+
+    def test_employee_cannot_bulk_delete_employees(self):
+        employee = User.objects.create_user(
+            email="employee5@example.com",
+            password="pass123",
+            role="employee"
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+        response = self.client.delete(
+            "/api/admin/employees/delete/",
+            {"employee_ids": [employee.id]},
+            format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
