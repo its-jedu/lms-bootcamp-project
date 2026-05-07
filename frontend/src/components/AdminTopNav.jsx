@@ -14,6 +14,7 @@ export default function AdminTopNav() {
     { name: "Dashboard", path: "./dashboard" },
     { name: "Create Course", path: "./create-course" },
     { name: "Manage Employees", path: "./manage-employees" },
+        { name: "Assign Course", path: "./assign-course" },
     { name: "Track Progress", path: "./track-progress" },
   ];
 

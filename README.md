@@ -397,29 +397,12 @@ Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
 
-**Request (Option 1 - Auto generate password):**
+**Request:**
 
 ```json
 {
-  "first_name": "John",
-  "last_name": "Doe",
-  "email": "john.doe@example.com",
-  "phone_number": "+1234567890",
-  "position": "Software Developer",
-  "password_option": "auto"
-}
-```
-
-**Request (Option 2 - Lastname as password):**
-
-```json
-{
-  "first_name": "Jane",
-  "last_name": "Smith",
-  "email": "jane.smith@example.com",
-  "phone_number": "+1987654321",
-  "position": "UI Designer",
-  "password_option": "lastname"
+  "name": "John Doe",
+  "email": "john.doe@example.com"
 }
 ```
 
@@ -428,14 +411,20 @@ Content-Type: application/json
 ```json
 {
   "id": 4,
-  "first_name": "John",
-  "last_name": "Doe",
+  "name": "John Doe",
   "email": "john.doe@example.com",
-  "phone_number": "+1234567890",
-  "position": "Software Developer",
   "role": "employee",
   "generated_password": "aB3$xY9@",
   "message": "Employee created successfully. Password is: aB3$xY9@"
+}
+```
+
+**Error Response (422 Unprocessable Entity):**
+
+```json
+{
+  "email": ["User with this email already exists"],
+  "name": ["Please provide both first and last name"]
 }
 ```
 
@@ -513,7 +502,7 @@ Content-Type: application/json
 }
 ```
 
-### 9. Update Course / Publish Toggle
+## 9. Update Course / Publish Toggle
 
 **Endpoint:** `PATCH /api/courses/{course_id}/`
 
@@ -768,9 +757,7 @@ Content-Type: application/json
 **Headers:**
 
 ```
-
 Authorization: Bearer <access_token>
-
 ```
 
 **Response (200 OK):**
@@ -888,11 +875,9 @@ Content-Type: application/json
 ```json
 {
   "email": ["User with this email already exists"],
-  "last_name": ["Lastname is required"]
+  "name": ["Please provide both first and last name"]
 }
 ```
-
----
 
 ## STATUS CODES SUMMARY
 
