@@ -9,43 +9,22 @@ import {
 
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminLayout from "./layout/AdminLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 
-// Admin
+// Admin pages
 import AdminDashboard from "./pages/AdminDashboard";
+import CreateCourse from "./pages/CreateCourse";
+import ManageEmployees from "./pages/ManageEmployees";
+import AssignCourse from "./pages/AssignCourse";
+import TrackProgress from "./pages/TrackProgress";
+import Analytics from "./pages/Analytics";
+
+// Employee
 import EmployeeLayout from "./pages/employee/EmployeeLayout";
 import EmployeeCourses from "./pages/employee/EmployeeCourses";
-import EmployeeOverview from "./pages/employee/EmployeeOverview"
-import {courseData} from "./pages/employee/courseData.js"
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <MainLayout />,
-    children: [
-      { index: true, element: <Login /> },
-      {
-        path: "admin",
-        element: (
-          <ProtectedRoute allowRoles={["admin"]}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "employee",
-        element: (
-          <ProtectedRoute allowRoles={["employee"]}>
-            <EmployeeLayout />
-          </ProtectedRoute>
-        ),
-        children: [
-          { index: true, element: <EmployeeOverview courseData={courseData} /> },
-          { path: "courses", element: <EmployeeCourses courseData={courseData} /> },
-        ]
-      }
-    ]
-  }
-]);
+import EmployeeOverview from "./pages/employee/EmployeeOverview";
+import { courseData } from "./pages/employee/courseData.js";
 
 function App() {
   const router = createBrowserRouter(
@@ -68,7 +47,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="create-course" element={<CreateCourse />} />
           <Route path="manage-employees" element={<ManageEmployees />} />
-           <Route path="assign-course" element={<AssignCourse />} />
+          <Route path="assign-course" element={<AssignCourse />} />
           <Route path="track-progress" element={<TrackProgress />} />
           <Route path="analytics" element={<Analytics />} />
         </Route>
@@ -78,12 +57,12 @@ function App() {
           path="employee"
           element={
             <ProtectedRoute allowRoles={["employee"]}>
-              <EmployeeDashboard />
+              <EmployeeLayout />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<EmployeeOverview />} />
+          <Route index element={<EmployeeOverview courseData={courseData} />} />
+          <Route path="courses" element={<EmployeeCourses courseData={courseData} />} />
         </Route>
 
       </Route>
