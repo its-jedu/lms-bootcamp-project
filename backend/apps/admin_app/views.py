@@ -51,30 +51,29 @@ class CreateEmployeeView(APIView):
         
         validated_data = serializer.validated_data
         
-        # Generate password based on option
-        if validated_data['password_option'] == 'lastname':
-            generated_password = validated_data['last_name'].upper()
-        else:  # auto
-            generated_password = generate_random_password()
+        # Split full name into first and last name
+        name_parts = validated_data['name'].strip().split()
+        first_name = name_parts[0]
+        last_name = ' '.join(name_parts[1:])
+        
+        # Always generate auto password
+        generated_password = generate_random_password()
         
         # Create employee user with full profile
         user = User.objects.create_user(
             email=validated_data['email'],
             password=generated_password,
             role='employee',
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            phone_number=validated_data.get('phone_number', ''),
-            position=validated_data.get('position', '')
+            first_name=first_name,
+            last_name=last_name,
+            phone_number='',
+            position=''
         )
         
         return Response({
             'id': user.id,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
+            'name': f"{user.first_name} {user.last_name}",
             'email': user.email,
-            'phone_number': user.phone_number,
-            'position': user.position,
             'role': user.role,
             'generated_password': generated_password,
             'message': f'Employee created successfully. Password is: {generated_password}'

@@ -8,16 +8,19 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'role', 'created_at']
 
 class CreateEmployeeSerializer(serializers.Serializer):
-    first_name = serializers.CharField(max_length=100)
-    last_name = serializers.CharField(max_length=100)
+    name = serializers.CharField(max_length=200)
     email = serializers.EmailField()
-    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    position = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    password_option = serializers.ChoiceField(choices=['auto', 'lastname'], default='auto')
     
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("User with this email already exists")
+        return value
+    
+    def validate_name(self, value):
+        """Validate that name contains at least first and last name"""
+        name_parts = value.strip().split()
+        if len(name_parts) < 2:
+            raise serializers.ValidationError("Please provide both first and last name")
         return value
 
 class DashboardSerializer(serializers.Serializer):
