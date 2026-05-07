@@ -13,7 +13,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 // Admin
 import AdminDashboard from "./pages/AdminDashboard";
 import EmployeeLayout from "./pages/employee/EmployeeLayout";
-import AdminOverview from "./pages/AdminOverview";
 import EmployeeCourses from "./pages/employee/EmployeeCourses";
 import EmployeeOverview from "./pages/employee/EmployeeOverview"
 import {courseData} from "./pages/employee/courseData.js"
@@ -31,9 +30,6 @@ const router = createBrowserRouter([
             <AdminDashboard />
           </ProtectedRoute>
         ),
-        children: [
-          { index: true, element: <AdminOverview /> }
-        ]
       },
       {
         path: "employee",
