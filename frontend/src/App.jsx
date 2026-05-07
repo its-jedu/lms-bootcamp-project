@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import CreateCourse from "./pages/CreateCourse";
 import ManageEmployees from "./pages/ManageEmployees";
+import AssignCourse from "./pages/AssignCourse";
 import TrackProgress from "./pages/TrackProgress";
 import Analytics from "./pages/Analytics";
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="create-course" element={<CreateCourse />} />
           <Route path="manage-employees" element={<ManageEmployees />} />
+           <Route path="assign-course" element={<AssignCourse />} />
           <Route path="track-progress" element={<TrackProgress />} />
           <Route path="analytics" element={<Analytics />} />
         </Route>

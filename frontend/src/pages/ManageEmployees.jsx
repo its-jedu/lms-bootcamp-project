@@ -8,7 +8,18 @@ export default function ManageEmployees() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [successOpen, setSuccessOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [generatedPassword, setGeneratedPassword] = useState("");
+  const [generatedEmail, setGeneratedEmail] = useState("");
+
+  // Generate a simple password
+  const generatePassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let password = "";
+    for (let i = 0; i < 10; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
 
   // ============================================
   // 4. EVENT HANDLERS (after state declarations)
@@ -19,12 +30,24 @@ export default function ManageEmployees() {
       return;
     }
 
-    setSuccessMessage(`Employee ${name} has been successfully added`);
+    const password = generatePassword();
+    setGeneratedEmail(email);
+    setGeneratedPassword(password);
     setSuccessOpen(true);
 
     // Reset form
     setEmail("");
     setName("");
+  };
+
+  const handleCopyCredentials = () => {
+    const credentials = `Email: ${generatedEmail}\nPassword: ${generatedPassword}`;
+    navigator.clipboard.writeText(credentials);
+    alert("Credentials copied to clipboard!");
+  };
+
+  const handleBackToManage = () => {
+    setSuccessOpen(false);
   };
 
   const handleCancel = () => navigate(-1);
@@ -44,12 +67,12 @@ export default function ManageEmployees() {
           />
 
           {/* modal */}
-          <div className="relative z-10 w-[420px] max-w-[92vw] rounded-xl bg-[#0f3d3a] px-8 py-7 shadow-xl">
+          <div className="relative z-10 w-[420px] max-w-[92vw] rounded-xl bg-white px-8 py-7 shadow-xl">
             {/* close */}
             <button
               type="button"
               onClick={() => setSuccessOpen(false)}
-              className="absolute right-4 top-4 text-white/80 hover:text-white text-sm"
+              className="absolute right-4 top-4 text-gray-600 hover:text-gray-900 text-sm"
               aria-label="Close"
               title="Close"
             >
@@ -58,7 +81,7 @@ export default function ManageEmployees() {
 
             {/* big check */}
             <div className="flex justify-center">
-              <div className="h-16 w-16 rounded-full bg-transparent flex items-center justify-center">
+              <div className="h-16 w-16 rounded-full bg-[#0f3d3a] flex items-center justify-center">
                 <svg
                   width="56"
                   height="56"
@@ -79,10 +102,43 @@ export default function ManageEmployees() {
             </div>
 
             <div className="mt-2 text-center">
-              <div className="text-white text-[22px] font-semibold">Success!</div>
-              <p className="mt-2 text-white/85 text-[11px] leading-4">
-                {successMessage}
+              <div className="text-gray-900 text-[22px] font-semibold">Password Generated!</div>
+              <p className="mt-3 text-gray-600 text-[11px] leading-5">
+                Employee has been successfully added.
+                <br />
+                Provide them with this credentials to log in:
               </p>
+
+              {/* Credentials Display */}
+              <div className="mt-4 bg-gray-50 rounded-lg p-4 space-y-2 border border-gray-200">
+                <div className="text-left">
+                  <p className="text-gray-500 text-[10px] font-medium">Email:</p>
+                  <p className="text-gray-900 text-[11px] font-semibold">{generatedEmail}</p>
+                </div>
+                <div className="text-left">
+                  <p className="text-gray-500 text-[10px] font-medium">Password:</p>
+                  <p className="text-gray-900 text-[11px] font-semibold">{generatedPassword}</p>
+                </div>
+              </div>
+
+              {/* Copy button */}
+              <button
+                onClick={handleCopyCredentials}
+                className="mt-4 w-full flex items-center justify-center gap-2 h-9 rounded bg-[#0f3d3a] text-white text-[11px] font-semibold hover:bg-[#0c312f]"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Copy all credentials
+              </button>
+
+              {/* Back to manage link */}
+              <button
+                onClick={handleBackToManage}
+                className="mt-3 text-gray-600 hover:text-gray-900 text-[11px] font-medium underline underline-offset-2"
+              >
+                Back to manage
+              </button>
             </div>
           </div>
         </div>
