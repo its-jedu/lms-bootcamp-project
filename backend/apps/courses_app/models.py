@@ -71,6 +71,12 @@ class Material(models.Model):
         return self.filename
 
 class CourseAssignment(models.Model):
+    PROGRESS_STATUS_CHOICES = [
+        ("not_started", "Not Started"),
+        ("in_progress", "In Progress"),
+        ("completed", "Completed"),
+    ]
+
     employee = models.ForeignKey(
         "auth_app.User",
         on_delete=models.CASCADE,
@@ -83,12 +89,21 @@ class CourseAssignment(models.Model):
         related_name="employee_assignments"
     )
 
+    progress_status = models.CharField(
+        max_length=20,
+        choices=PROGRESS_STATUS_CHOICES,
+        default="not_started",
+    )
     assigned_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = "course_assignments"
         unique_together = ("employee", "course")
+        ordering = ["-assigned_at"]
 
     def __str__(self):
         return f"{self.employee.email} -> {self.course.title}"

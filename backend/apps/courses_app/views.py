@@ -15,6 +15,8 @@ from .serializers import (
     FileMaterialUploadSerializer,
     TextMeterialSerializer,
     VideoMeterialSerializer,
+    CourseAssignmentCreateSerializer,
+    CourseAssignmentSerializer,
     FILE_TYPE,
 )
 from rest_framework.decorators import action
@@ -70,6 +72,12 @@ class CourseViewSet(viewsets.ViewSet):
         
         serializer.save()
         return Response(CourseSerializer(course).data)
+
+    
+class CourseAssignmentViewSet(viewsets.ViewSet):
+    pass
+
+    
     
 class LessonViewSet(viewsets.ViewSet):
     def get_permissions(self):
