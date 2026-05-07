@@ -43,9 +43,9 @@ export default function AdminTopNav() {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setOpen(false);
-    logout();
+    await logout();
     if (!isAuthenticated && !user && !accessToken) {
       navigate("/", { replace: true });
     }

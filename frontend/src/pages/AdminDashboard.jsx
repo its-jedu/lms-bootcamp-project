@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import useAuth from "@/auth/useAuth";
+import axiosInstance from "@/api/axiosInstance";
 
 export default function AdminDashboard() {
   let content;
@@ -10,9 +11,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchCourses() {
       try {
-        const response = await fetch("/api/courses");
-        const data = await response.json();
-        if (response.ok) {
+        const response = await axiosInstance.get("/api/courses/");
+        const data = response.data;
+        if (response.status === 200) {
           setCourses(data);
         } else {
           console.error("Failed to fetch courses:", data.message);
