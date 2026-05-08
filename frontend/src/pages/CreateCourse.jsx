@@ -14,40 +14,18 @@ export default function CreateCourse() {
   });
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
-  const [modules, setModules] = useState([
-    {
-      id: 1,
-      name: "Module 1",
-      objective: "",
-      lessons: [
-        { id: 1, name: "Lesson 1", objective: "", content: "" },
-        { id: 2, name: "Lesson 2", objective: "", content: "" },
-      ],
-    },
+  const [lessons, setLessons] = useState([
+    { id: 1, name: "Lesson 1", objective: "", content: "" },
+    { id: 2, name: "Lesson 2", objective: "", content: "" },
   ]);
 
-  const [selectedModuleId, setSelectedModuleId] = useState(1);
   const [selectedLessonId, setSelectedLessonId] = useState(1);
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
-  const steps = useMemo(
-    () => [
-      { number: 1, name: "Basic Information" },
-      { number: 2, name: "Course Material" },
-      { number: 3, name: "Review & Publish" },
-    ],
-    []
-  );
-
-  const selectedModule = useMemo(
-    () => modules.find((m) => m.id === selectedModuleId) ?? null,
-    [modules, selectedModuleId]
-  );
 
   const selectedLesson = useMemo(() => {
-    if (!selectedModule) return null;
-    return selectedModule.lessons.find((l) => l.id === selectedLessonId) ?? null;
-  }, [selectedModule, selectedLessonId]);
+    return lessons.find((l) => l.id === selectedLessonId) ?? null;
+  }, [lessons, selectedLessonId]);
 
   const handleNext = () => {
     setCurrentStep((prev) => {
@@ -83,210 +61,96 @@ export default function CreateCourse() {
     reader.readAsDataURL(file);
   };
 
-  const handleAddModule = () => {
-    setModules((prev) => {
-      const nextId = prev.length ? Math.max(...prev.map((m) => m.id)) + 1 : 1;
-      const newModule = {
-        id: nextId,
-        name: `Module ${nextId}`,
-        objective: "",
-        lessons: [],
-      };
-      setSelectedModuleId(nextId);
-      setSelectedLessonId(null);
-      return [...prev, newModule];
-    });
-  };
-
-  const handleDeleteModule = (id) => {
-    setModules((prev) => {
-      const filtered = prev.filter((m) => m.id !== id);
-      if (selectedModuleId === id) {
-        const fallback = filtered[0] ?? null;
-        setSelectedModuleId(fallback?.id ?? null);
-        setSelectedLessonId(fallback?.lessons?.[0]?.id ?? null);
-      }
-      return filtered;
-    });
-  };
 
   const handleAddLesson = () => {
-    if (!selectedModuleId) return;
+    setLessons((prev) => {
+      const nextLessonId = prev.length
+        ? Math.max(...prev.map((l) => l.id)) + 1
+        : 1;
 
-    setModules((prev) =>
-      prev.map((m) => {
-        if (m.id !== selectedModuleId) return m;
+      const newLesson = {
+        id: nextLessonId,
+        name: `Lesson ${nextLessonId}`,
+        objective: "",
+        content: "",
+      };
 
-        const nextLessonId = m.lessons.length
-          ? Math.max(...m.lessons.map((l) => l.id)) + 1
-          : 1;
-
-        const newLesson = {
-          id: nextLessonId,
-          name: `Lesson ${nextLessonId}`,
-          objective: "",
-          content: "",
-        };
-
-        setSelectedLessonId(nextLessonId);
-        return { ...m, lessons: [...m.lessons, newLesson] };
-      })
-    );
+      setSelectedLessonId(nextLessonId);
+      return [...prev, newLesson];
+    });
   };
 
   const handleDeleteLesson = (lessonId) => {
-    if (!selectedModuleId) return;
+    setLessons((prev) => {
+      const nextLessons = prev.filter((l) => l.id !== lessonId);
 
-    setModules((prev) =>
-      prev.map((m) => {
-        if (m.id !== selectedModuleId) return m;
-        const nextLessons = m.lessons.filter((l) => l.id !== lessonId);
-        if (selectedLessonId === lessonId) {
-          setSelectedLessonId(nextLessons[0]?.id ?? null);
-        }
-        return { ...m, lessons: nextLessons };
-      })
-    );
+      if (selectedLessonId === lessonId) {
+        setSelectedLessonId(nextLessons[0]?.id ?? null);
+      }
+
+      return nextLessons;
+    });
   };
 
-  const updateModule = (patch) => {
-    if (!selectedModuleId) return;
-    setModules((prev) =>
-      prev.map((m) => (m.id === selectedModuleId ? { ...m, ...patch } : m))
-    );
-  };
 
   const updateLesson = (lessonId, patch) => {
-    if (!selectedModuleId) return;
-    setModules((prev) =>
-      prev.map((m) => {
-        if (m.id !== selectedModuleId) return m;
-        return {
-          ...m,
-          lessons: m.lessons.map((l) =>
-            l.id === lessonId ? { ...l, ...patch } : l
-          ),
-        };
-      })
+    setLessons((prev) =>
+      prev.map((l) => (l.id === lessonId ? { ...l, ...patch } : l)),
     );
   };
 
-  const StepTabs = () => (
-    <div className="mb-4 flex flex-wrap gap-2">
-      {steps.map((s) => {
-        const active = s.number === currentStep;
+  const Sidebar = () => (
+  <aside className="w-full lg:w-[260px] shrink-0">
+    <div className="text-[11px] text-gray-500 mb-2">Draft</div>
+
+    <div className="flex items-center justify-between mb-3">
+      <div className="text-[13px] font-semibold text-gray-900">
+        Course Lessons
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={handleAddLesson}
+      className="w-full h-8 rounded-md border border-gray-200 bg-white text-[11px] font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2"
+    >
+      <span className="text-[14px] leading-none">+</span> Add Lesson
+    </button>
+
+    <div className="mt-3 space-y-2">
+      {lessons.map((l) => {
+        const active = l.id === selectedLessonId;
+
         return (
           <button
-            key={s.number}
+            key={l.id}
             type="button"
-            onClick={() => setCurrentStep(s.number)}
-            className={`px-3 py-2 rounded-md text-[12px] border transition-colors ${
+            onClick={() => setSelectedLessonId(l.id)}
+            className={`w-full rounded border px-3 py-2 text-left text-[11px] ${
               active
-                ? "bg-[#0F2F2A] text-white border-[#0F2F2A]"
-                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                ? "border-gray-400 bg-gray-50"
+                : "border-gray-200 bg-white hover:bg-gray-50"
             }`}
           >
-            {s.name}
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate">{l.name}</span>
+              <span
+                className="text-gray-500 hover:text-gray-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteLesson(l.id);
+                }}
+              >
+                Delete
+              </span>
+            </div>
           </button>
         );
       })}
     </div>
-  );
+  </aside>
+);
 
-  const Sidebar = () => {
-    // Get all lessons from all modules in a flat list
-    const allLessons = modules.flatMap((m) =>
-      m.lessons.map((l) => ({ ...l, moduleId: m.id }))
-    );
-
-    return (
-      <aside className="w-full lg:w-[280px] shrink-0">
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <button
-              type="button"
-              onClick={handleAddLesson}
-              className="h-8 w-8 rounded-full bg-[#0F3D3A] text-white flex items-center justify-center flex-shrink-0 hover:bg-[#0c3229] transition-colors"
-              title="Add Lesson"
-            >
-              <span className="text-sm font-bold">+</span>
-            </button>
-            <span className="text-xs font-medium text-gray-700">Add Lesson</span>
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          {allLessons.map((l) => {
-            const lessonActive = l.id === selectedLessonId;
-            return (
-              <button
-                key={l.id}
-                type="button"
-                onClick={() => {
-                  setSelectedModuleId(l.moduleId);
-                  setSelectedLessonId(l.id);
-                }}
-                className={`w-full px-3 py-2.5 text-left text-xs font-medium transition-colors flex items-center justify-between group border rounded ${
-                  lessonActive
-                    ? "bg-white text-gray-900 border-gray-300"
-                    : "text-gray-700 hover:bg-gray-50 border-gray-200"
-                }`}
-              >
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                  <svg className="w-4 h-4 text-gray-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                    <circle cx="5" cy="5" r="1" />
-                    <circle cx="10" cy="5" r="1" />
-                    <circle cx="15" cy="5" r="1" />
-                    <circle cx="5" cy="10" r="1" />
-                    <circle cx="10" cy="10" r="1" />
-                    <circle cx="15" cy="10" r="1" />
-                    <circle cx="5" cy="15" r="1" />
-                    <circle cx="10" cy="15" r="1" />
-                    <circle cx="15" cy="15" r="1" />
-                  </svg>
-                  <span className="truncate">{l.name}</span>
-                </div>
-                <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedModuleId(l.moduleId);
-                      setSelectedLessonId(l.id);
-                    }}
-                    className="p-1.5 hover:bg-gray-200 rounded transition-colors text-gray-600"
-                    title="Edit"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedModuleId(l.moduleId);
-                      handleDeleteLesson(l.id);
-                    }}
-                    className="p-1.5 hover:bg-gray-200 rounded transition-colors text-gray-600"
-                    title="Delete"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-              </button>
-            );
-          })}
-
-          {allLessons.length === 0 && (
-            <div className="text-xs text-gray-400 px-3 py-2">No lessons yet</div>
-          )}
-        </div>
-      </aside>
-    );
-  };
 
   const CourseMaterialRight = () => (
     <div className="flex-1">
@@ -307,7 +171,8 @@ export default function CreateCourse() {
         <input
           value={selectedLesson?.name ?? ""}
           onChange={(e) =>
-            selectedLesson && updateLesson(selectedLesson.id, { name: e.target.value })
+            selectedLesson &&
+            updateLesson(selectedLesson.id, { name: e.target.value })
           }
           disabled={!selectedLesson}
           className="w-full h-9 px-3 border border-gray-300 rounded-md text-[12px] outline-none disabled:bg-gray-50"
@@ -326,9 +191,15 @@ export default function CreateCourse() {
             <select className="px-2 py-1 border border-gray-300 rounded text-[11px]">
               <option>Font</option>
             </select>
-            <button className="px-2 py-1 hover:bg-gray-100 rounded font-semibold">B</button>
-            <button className="px-2 py-1 hover:bg-gray-100 rounded italic">I</button>
-            <button className="px-2 py-1 hover:bg-gray-100 rounded underline">U</button>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded font-semibold">
+              B
+            </button>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded italic">
+              I
+            </button>
+            <button className="px-2 py-1 hover:bg-gray-100 rounded underline">
+              U
+            </button>
             <div className="w-px h-4 bg-gray-300"></div>
             <button className="px-2 py-1 hover:bg-gray-100 rounded">•</button>
             <button className="px-2 py-1 hover:bg-gray-100 rounded">1.</button>
@@ -343,7 +214,9 @@ export default function CreateCourse() {
         <div className="text-[12px] font-semibold text-gray-900 mb-2">
           Add Video - Embed Link
         </div>
-        <p className="text-[10px] text-gray-600 mb-3">Embed from YouTube or Vimeo</p>
+        <p className="text-[10px] text-gray-600 mb-3">
+          Embed from YouTube or Vimeo
+        </p>
         <div className="border border-gray-300 rounded-md p-3 bg-white">
           <input
             type="text"
@@ -364,11 +237,16 @@ export default function CreateCourse() {
         <div className="text-[12px] font-semibold text-gray-900 mb-2">
           Add Resources
         </div>
-        <p className="text-[10px] text-gray-600 mb-3">Supported files: Audio (MP3 and WAV), Files (PDF)</p>
+        <p className="text-[10px] text-gray-600 mb-3">
+          Supported files: Audio (MP3 and WAV), Files (PDF)
+        </p>
 
         <div className="space-y-3">
           {uploadedFiles.map((file, idx) => (
-            <div key={idx} className="border border-gray-200 rounded-md p-3 bg-white">
+            <div
+              key={idx}
+              className="border border-gray-200 rounded-md p-3 bg-white"
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <div className="text-[11px] text-gray-700">{file.name}</div>
@@ -379,18 +257,43 @@ export default function CreateCourse() {
                     className="p-1 hover:bg-gray-100 rounded"
                     title="Edit"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 17.25V21h3.75L17.81 9.94m-4.75-4.75L19.5 7.5" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M3 17.25V21h3.75L17.81 9.94m-4.75-4.75L19.5 7.5"
+                        stroke="#666"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                    onClick={() =>
+                      setUploadedFiles(
+                        uploadedFiles.filter((_, i) => i !== idx),
+                      )
+                    }
                     className="p-1 hover:bg-gray-100 rounded"
                     title="Delete"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z" fill="#666"/>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"
+                        fill="#666"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -401,18 +304,21 @@ export default function CreateCourse() {
           <button
             type="button"
             onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = '.mp3,.wav,.pdf';
+              const input = document.createElement("input");
+              input.type = "file";
+              input.accept = ".mp3,.wav,.pdf";
               input.onchange = (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  setUploadedFiles([...uploadedFiles, { name: file.name, status: 'success' }]);
+                  setUploadedFiles([
+                    ...uploadedFiles,
+                    { name: file.name, status: "success" },
+                  ]);
                 }
               };
               input.click();
             }}
-            className="w-full h-9 px-4 rounded-lg bg-[#0F3D3A] text-white text-xs font-semibold hover:bg-[#0c3229]"
+            className="w-full h-8 px-3 rounded-md bg-[#0F2F2A] text-white text-[11px] font-semibold hover:bg-[#0b241f]"
           >
             Choose files
           </button>
@@ -432,37 +338,55 @@ export default function CreateCourse() {
           <table className="w-full text-[11px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold text-gray-700">Course Title</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-700">Action</th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  Course Title
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr className="border-b border-gray-200 hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-800">Course name</td>
                 <td className="px-4 py-3">
-                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-green-100 text-green-700">Published</span>
+                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-green-100 text-green-700">
+                    Published
+                  </span>
                 </td>
                 <td className="px-4 py-3">
-                  <button className="text-[10px] text-blue-600 hover:underline">Publish</button>
+                  <button className="text-[10px] text-blue-600 hover:underline">
+                    Publish
+                  </button>
                 </td>
               </tr>
               <tr className="border-b border-gray-200 hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-800">Course name</td>
                 <td className="px-4 py-3">
-                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-blue-100 text-blue-700">Draft</span>
+                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-blue-100 text-blue-700">
+                    Draft
+                  </span>
                 </td>
                 <td className="px-4 py-3">
-                  <button className="text-[10px] text-blue-600 hover:underline">Publish</button>
+                  <button className="text-[10px] text-blue-600 hover:underline">
+                    Publish
+                  </button>
                 </td>
               </tr>
               <tr className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-800">Course name</td>
                 <td className="px-4 py-3">
-                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-blue-100 text-blue-700">Draft</span>
+                  <span className="inline-block px-2 py-1 rounded text-[10px] bg-blue-100 text-blue-700">
+                    Draft
+                  </span>
                 </td>
                 <td className="px-4 py-3">
-                  <button className="text-[10px] text-blue-600 hover:underline">Publish</button>
+                  <button className="text-[10px] text-blue-600 hover:underline">
+                    Publish
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -475,7 +399,7 @@ export default function CreateCourse() {
         <button
           type="button"
           onClick={handleSaveDraft}
-          className="h-9 px-6 rounded-lg bg-[#0F3D3A] text-white text-xs font-semibold hover:bg-[#0c3229]"
+          className="h-8 px-4 rounded-md border border-gray-300 text-[11px] text-gray-700 hover:bg-gray-50"
         >
           Save
         </button>
@@ -495,7 +419,8 @@ export default function CreateCourse() {
           </div>
         </div>
         <div className="text-[12px] text-gray-700">
-          <span className="font-semibold">Status:</span> <span className="text-gray-600">Draft</span>
+          <span className="font-semibold">Status:</span>{" "}
+          <span className="text-gray-600">Draft</span>
         </div>
       </div>
 
@@ -615,13 +540,18 @@ export default function CreateCourse() {
         <div className="max-w-6xl mx-auto bg-white border border-gray-200 rounded-md">
           <div className="px-10 pt-8 pb-8">
             {currentStep !== 1 && (
-              <div className="text-[15px] font-semibold text-gray-900 mb-6">
-                {steps[currentStep - 1]?.name ?? "Create Course"}
+              <div className="text-[15px] font-semibold text-gray-900 mb-4">
+                {currentStep === 2 && "Course Material"}
+                {currentStep === 3 && "Review & Publish"}
               </div>
             )}
 
             {/* Layout: sidebar + main */}
-            <div className={currentStep === 1 ? "" : "mt-2 flex flex-col lg:flex-row gap-8"}>
+            <div
+              className={
+                currentStep === 1 ? "" : "mt-2 flex flex-col lg:flex-row gap-8"
+              }
+            >
               {currentStep !== 1 && <Sidebar />}
 
               <div className={currentStep === 1 ? "" : "flex-1"}>
