@@ -67,7 +67,8 @@ urlpatterns = [
     path("lessons/<int:lesson_id>/materials/video/", lesson_material_video, name="material-create-video"),
     path("lessons/<int:lesson_id>/materials/<int:pk>/", lesson_material_delete, name="material-detail"),    
     
-    path("course-assignments/", course_assignments, name="course-assignments"),
+    # To keep the same style as "/admin/dashboard/" for admin routing
+    path("admin/course-assignments/", course_assignments, name="course-assignments"),
     # MUST be moved to admin_app
     path("employee/assigned-courses/", employee_assigned_courses, name="employee-assigned-courses"), 
 ]

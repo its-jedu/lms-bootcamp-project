@@ -748,7 +748,7 @@ class CourseAssignmentAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
 
         response = self.client.post(
-            "/api/course-assignments/",
+            "/api/admin/course-assignments/",
             {
                 "employee_ids": [self.employee1.id, self.employee2.id],
                 "course_ids": [self.course_1.id]
@@ -767,7 +767,7 @@ class CourseAssignmentAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
 
         response = self.client.post(
-            "/api/course-assignments/",
+            "/api/admin/course-assignments/",
             {
                 "employee_ids": [self.employee1.id, self.employee2.id],
                 "course_ids": [self.course_1.id, self.course_2.id]
@@ -791,7 +791,7 @@ class CourseAssignmentAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
 
         response = self.client.post(
-            "/api/course-assignments/",
+            "/api/admin/course-assignments/",
             {
                 "employee_ids": [self.employee1.id],
                 "course_ids": [self.course_1.id]
@@ -807,7 +807,7 @@ class CourseAssignmentAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
 
         response = self.client.post(
-            "/api/course-assignments/",
+            "/api/admin/course-assignments/",
             {
                 "employee_ids": [self.inactive_employee_user.id],
                 "course_ids": [self.course_1.id]
@@ -822,7 +822,7 @@ class CourseAssignmentAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
 
         response = self.client.post(
-            "/api/course-assignments/",
+            "/api/admin/course-assignments/",
             {
                 "employee_ids": [self.employee1.id],
                 "course_ids": [self.draft_course.id]
@@ -839,7 +839,7 @@ class CourseAssignmentAPITests(TestCase):
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
 
-        response = self.client.get("/api/course-assignments/")
+        response = self.client.get("/api/admin/course-assignments/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
@@ -880,7 +880,7 @@ class CourseAssignmentAPITests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token_1}")
 
         response = self.client.post(
-            "/api/course-assignments/",
+            "/api/admin/course-assignments/",
             {
                 "employee_ids": [self.employee2.id],
                 "course_ids": [self.course_1.id]
@@ -967,3 +967,28 @@ class CourseAssignmentAPITests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
+
+    def test_employee_course_list_only_returns_assigned_courses(self):
+        CourseAssignment.objects.create(employee=self.employee1, course=self.course_1)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token_1}")
+        response = self.client.get("/api/courses/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        returned_course_ids = [course["id"] for course in response.data]
+
+        self.assertIn(self.course_1.id, returned_course_ids)
+        self.assertNotIn(self.course_2.id, returned_course_ids)
+
+    def test_employee_cannot_list_lessons_for_unassigned_course(self):
+        Lesson.objects.create(
+            course=self.course_2,
+            title="Unassigned Lesson",
+            objective="Hidden",
+            order=1,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token_1}")
+        response = self.client.get(f"/api/courses/{self.course_2.id}/lessons/")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
