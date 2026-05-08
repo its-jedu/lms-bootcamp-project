@@ -115,7 +115,7 @@ class CourseAssignmentCreateSerializer(serializers.Serializer):
         if len(value) != len(set(value)):
             raise serializers.ValidationError("Employee ids must not contain duplicates.")
 
-        employees = User.objects.filter(id__in=value, role="employee")
+        employees = User.objects.filter(id__in=value, role="employee", is_active = True)
         if employees.count() != len(value):
             raise serializers.ValidationError("All employee ids must belong to existing employees.")
 
