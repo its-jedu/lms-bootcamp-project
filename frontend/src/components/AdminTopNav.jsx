@@ -11,14 +11,12 @@ export default function AdminTopNav() {
   const menuRef = useRef(null);
 
   const menuItems = [
-    { name: "Dashboard", path: "./dashboard" },
-    { name: "Create Course", path: "./create-course" },
-    { name: "Manage Employees", path: "./manage-employees" },
-        { name: "Assign Course", path: "./assign-course" },
-    { name: "Track Progress", path: "./track-progress" },
+    { name: "Dashboard", path: "dashboard" },
+    { name: "Create Course", path: "create-course" },
+    { name: "Manage Employees", path: "manage-employees" },
+    { name: "Assign Course", path: "assign-course" },
+    { name: "Track Progress", path: "track-progress" },
   ];
-
-  const isActive = (path) => location.pathname === path;
 
   const basePill =
     "rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition-colors whitespace-nowrap";
@@ -44,9 +42,9 @@ export default function AdminTopNav() {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setOpen(false);
-    logout();
+    await logout();
     if (!isAuthenticated && !user && !accessToken) {
       navigate("/", { replace: true });
     }
@@ -70,7 +68,9 @@ export default function AdminTopNav() {
             <NavLink
               key={item.path}
               to={item.path}
-              className={`${basePill} ${isActive(item.path) ? activePill : inactivePill}`}
+              className={({ isActive }) =>
+                `${basePill} ${isActive ? "bg-[#1f4842] text-white" : "bg-[#b9f27c] text-[#1f4845] hover:brightness-95"}`
+              }
             >
               {item.name}
             </NavLink>

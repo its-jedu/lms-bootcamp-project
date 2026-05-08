@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import useAuth from "@/auth/useAuth";
+import axiosInstance from "@/api/axiosInstance";
 
 export default function AdminDashboard() {
   let content;
@@ -10,9 +11,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchCourses() {
       try {
-        const response = await fetch("/api/courses");
-        const data = await response.json();
-        if (response.ok) {
+        const response = await axiosInstance.get("/api/courses/");
+        const data = response.data;
+        if (response.status === 200) {
           setCourses(data);
         } else {
           console.error("Failed to fetch courses:", data.message);
@@ -25,7 +26,7 @@ export default function AdminDashboard() {
   }, []);
 
   const handleEditCourse = (courseId) =>
-    navigate(`/admin/create-course?edit=${courseId}`);
+    navigate(`../create-course?edit=${courseId}`);
   const handleViewCourse = (courseId) =>
     console.log("Viewing course:", courseId);
 
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
             </h2>
           </div>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {courses.map((course) => (
+            {courses.filter((course) => course.status === "Draft").map((course) => (
               <div
                 key={course.id}
                 className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5"
