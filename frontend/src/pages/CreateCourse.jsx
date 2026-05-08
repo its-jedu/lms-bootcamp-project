@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "@/api/axiosInstance";
+import axios from "axios";
 
 const BasicInfo = ({
   courseData,
@@ -442,9 +444,7 @@ export default function CreateCourse() {
   const [currentStep, setCurrentStep] = useState(1);
   const [courseData, setCourseData] = useState({
     title: "",
-    description: "",
-    category: "",
-    thumbnail: null,
+    description: ""
   });
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
@@ -472,9 +472,14 @@ export default function CreateCourse() {
     setCurrentStep((prev) => (prev > 1 ? prev - 1 : prev));
   };
 
-  const handleSaveDraft = () => {
-    console.log("Draft:", { courseData, modules });
-    navigate("/admin/dashboard");
+  const handleSaveDraft = async() => {
+    try {
+      await axiosInstance.post("/api/courses", {});
+      alert("Draft saved successfully!");
+    } catch (error) {
+      console.error("Error saving draft:", error);
+      alert("Failed to save draft.");
+    }
   };
 
   const handlePublish = () => {
