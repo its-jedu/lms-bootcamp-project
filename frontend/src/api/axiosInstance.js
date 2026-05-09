@@ -3,13 +3,11 @@ import env from "../config/env";
 
 const API_URL = env.API_URL;
 
-// Create instance
 const axiosInstance = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // send cookies
+  withCredentials: true,
 });
 
-// Store access token in memory and localStorage
 let accessToken = localStorage.getItem("access_token") || null;
 
 export const setAccessToken = (token) => {
@@ -21,7 +19,6 @@ export const setAccessToken = (token) => {
   }
 };
 
-// Request interceptor (attach token)
 axiosInstance.interceptors.request.use(
   (config) => {
     if (accessToken) {
@@ -32,36 +29,27 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response interceptor (handle refresh)
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 and not already retried
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url.includes("api/auth/login/") &&
-      !originalRequest.url.includes("api/auth/logout/") &&
-      !originalRequest.url.includes("api/auth/token/refresh/")
+      !originalRequest.url.includes("api/auth/")
     ) {
       originalRequest._retry = true;
       try {
-        const res = await axiosInstance.post(
-          `api/auth/token/refresh/`,
-          {},
-          { withCredentials: true },
-        );
-
+        const res = await axiosInstance.post("api/auth/token/refresh/");
         const newAccessToken = res.data.access;
-
         setAccessToken(newAccessToken);
-
-        // Retry original request
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return axiosInstance(originalRequest);
       } catch (err) {
+        setAccessToken(null);
+        localStorage.removeItem("user");
+        window.location.href = "/";
         return Promise.reject(err);
       }
     }

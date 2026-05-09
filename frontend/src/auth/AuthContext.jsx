@@ -13,7 +13,6 @@ export const AuthProvider = ({ children }) => {
     const data = await loginUser(credentials);
     setAccessToken(data.access);
     setIsAuthenticated(true);
-
     if (data.user) {
       setUser(data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -22,18 +21,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await logoutUser();
-    setIsAuthenticated(false);
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout API call failed:", error);
+    }
     setAccessToken(null);
+    setIsAuthenticated(false);
     setUser(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("refresh_token");
   };
 
-  // Restore session on load
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     const storedUser = localStorage.getItem("user");
-
     if (token) {
       setAccessToken(token);
       setIsAuthenticated(true);
@@ -44,15 +46,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const contextData = {
-    isAuthenticated,
-    user,
-    login,
-    logout,
-    loading,
-  };
-
   return (
-    <AuthContext.Provider value={contextData}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
   );
 };

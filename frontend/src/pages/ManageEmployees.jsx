@@ -1,43 +1,78 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "@/api/axiosInstance";
 
 export default function ManageEmployees() {
-
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [successOpen, setSuccessOpen] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [generatedEmail, setGeneratedEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Generate a simple password
-  const generatePassword = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let password = "";
-    for (let i = 0; i < 10; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
-  // ============================================
-  // 4. EVENT HANDLERS (after state declarations)
-  // ============================================
-  const handleAddEmployee = () => {
+  const handleAddEmployee = async () => {
     if (!email.trim() || !name.trim()) {
       alert("Please fill in all fields");
       return;
     }
 
-    const password = generatePassword();
-    setGeneratedEmail(email);
-    setGeneratedPassword(password);
-    setSuccessOpen(true);
+    // Validate name has at least first and last name
+    const nameParts = name.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      alert("Please provide both first and last name");
+      return;
+    }
 
-    // Reset form
-    setEmail("");
-    setName("");
+    setLoading(true);
+
+    try {
+      console.log("Sending request to create employee:", {
+        email: email.trim(),
+        name: name.trim(),
+      });
+
+      const response = await axiosInstance.post("/api/admin/employees/", {
+        email: email.trim(),
+        name: name.trim(),
+      });
+
+      console.log("Response:", response.data);
+
+      if (response.data.generated_password) {
+        setGeneratedEmail(response.data.email);
+        setGeneratedPassword(response.data.generated_password);
+        setSuccessOpen(true);
+
+        // Reset form
+        setEmail("");
+        setName("");
+      } else {
+        alert("Employee created but no password was returned. Please check the response.");
+      }
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      console.error("Error response:", error.response?.data);
+      
+      if (error.response?.status === 422) {
+        const errorData = error.response.data;
+        if (errorData.email) {
+          alert(Array.isArray(errorData.email) ? errorData.email[0] : errorData.email);
+        } else if (errorData.name) {
+          alert(Array.isArray(errorData.name) ? errorData.name[0] : errorData.name);
+        } else {
+          alert(JSON.stringify(errorData));
+        }
+      } else if (error.response?.data?.error) {
+        alert(error.response.data.error);
+      } else if (error.response?.data?.detail) {
+        alert(error.response.data.detail);
+      } else {
+        alert("Failed to add employee. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCopyCredentials = () => {
@@ -52,9 +87,6 @@ export default function ManageEmployees() {
 
   const handleCancel = () => navigate(-1);
 
-  // ============================================
-  // 5. RETURN JSX (at the bottom)
-  // ============================================
   return (
     <div className="flex-1 overflow-auto bg-[#f3f4f6] relative">
       {/* Success modal overlay */}
@@ -193,9 +225,10 @@ export default function ManageEmployees() {
               </button>
               <button
                 onClick={handleAddEmployee}
-                className="h-9 px-6 rounded bg-[#0f3d3a] text-white text-[12px] font-medium hover:bg-[#0c312f]"
+                disabled={loading}
+                className="h-9 px-6 rounded bg-[#0f3d3a] text-white text-[12px] font-medium hover:bg-[#0c312f] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add Employee
+                {loading ? "Adding..." : "Add Employee"}
               </button>
             </div>
           </div>

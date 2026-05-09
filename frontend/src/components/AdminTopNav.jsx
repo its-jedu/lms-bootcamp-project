@@ -1,11 +1,11 @@
-import { NavLink, replace, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import useAuth from "@/auth/useAuth";
 
 export default function AdminTopNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, isAuthenticated, user, accessToken } = useAuth();
+  const { logout } = useAuth();
 
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -18,12 +18,6 @@ export default function AdminTopNav() {
     { name: "Track Progress", path: "track-progress" },
   ];
 
-  const basePill =
-    "rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition-colors whitespace-nowrap";
-  const activePill = "bg-[#1f4d45] text-white";
-  const inactivePill = "bg-[#b9f27c] text-[#1f4d45] hover:brightness-95";
-
-  // Close dropdown on outside click + ESC
   useEffect(() => {
     const onMouseDown = (e) => {
       if (!menuRef.current) return;
@@ -44,8 +38,11 @@ export default function AdminTopNav() {
 
   const handleLogout = async () => {
     setOpen(false);
-    await logout();
-    if (!isAuthenticated && !user && !accessToken) {
+    try {
+      await logout();
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
       navigate("/", { replace: true });
     }
   };
@@ -69,7 +66,7 @@ export default function AdminTopNav() {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `${basePill} ${isActive ? "bg-[#1f4842] text-white" : "bg-[#b9f27c] text-[#1f4845] hover:brightness-95"}`
+                `${"rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition-colors whitespace-nowrap"} ${isActive ? "bg-[#1f4842] text-white" : "bg-[#b9f27c] text-[#1f4845] hover:brightness-95"}`
               }
             >
               {item.name}

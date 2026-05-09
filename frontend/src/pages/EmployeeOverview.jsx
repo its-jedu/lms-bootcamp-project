@@ -1,117 +1,219 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "@/api/axiosInstance";
 
-const courses = [
-  { id: 1, title: "Project Management", lessons: 8, description: "A project management course equips professionals with essential skills to plan.", status: "Completed", progress: 36, image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&q=80" },
-  { id: 2, title: "Workplace Safety", lessons: 6, description: "A project management course equips professionals with essential skills to plan.", status: "In progress", progress: 28, image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&q=80" },
-  { id: 3, title: "Team Communications Skills", lessons: 3, description: "A project management course equips professionals with essential skills to plan.", status: "New", progress: 28, image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&q=80" },
-  { id: 4, title: "Data Handling and GDPR", lessons: 6, description: "A project management course equips professionals with essential skills to plan.", status: "In progress", progress: 65, image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&q=80" },
-  { id: 5, title: "Leadership Fundamentals", lessons: 5, description: "A project management course equips professionals with essential skills to plan.", status: "Not started", progress: 0, image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=400&q=80" },
-];
+export default function ManageEmployees() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState("");
+  const [generatedEmail, setGeneratedEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
-const navItems = ["Dashboard", "My Course", "Course Library", "Track Progress"];
+  const handleAddEmployee = async () => {
+    if (!email.trim() || !name.trim()) {
+      alert("Please fill in all fields");
+      return;
+    }
 
-const getStatusClasses = (status) => {
-  if (status === "Completed") return "bg-[#B8F699] text-[#1F4842]";
-  if (status === "In progress") return "bg-[#B8F699]/20 text-[#1F4842]";
-  if (status === "New") return "bg-[#FFF3CD] text-[#856404]";
-  return "bg-gray-400/20 text-[#212429]";
-};
+    setLoading(true);
 
-export default function AdminOverview() {
-  const [activeNav, setActiveNav] = useState("Dashboard");
+    try {
+      const response = await axiosInstance.post("/api/admin/employees/", {
+        email: email.trim(),
+        name: name.trim(),
+      });
+
+      setGeneratedEmail(response.data.email);
+      setGeneratedPassword(response.data.generated_password);
+      setSuccessOpen(true);
+
+      // Reset form
+      setEmail("");
+      setName("");
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        if (typeof errorData === "string") {
+          alert(errorData);
+        } else if (errorData.email) {
+          alert(errorData.email);
+        } else if (errorData.name) {
+          alert(errorData.name);
+        } else if (errorData.error) {
+          alert(errorData.error);
+        } else {
+          alert("Failed to add employee");
+        }
+      } else {
+        alert("Failed to add employee. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyCredentials = () => {
+    const credentials = `Email: ${generatedEmail}\nPassword: ${generatedPassword}`;
+    navigator.clipboard.writeText(credentials);
+    alert("Credentials copied to clipboard!");
+  };
+
+  const handleBackToManage = () => {
+    setSuccessOpen(false);
+  };
+
+  const handleCancel = () => navigate(-1);
 
   return (
-    <div className="font-sans bg-[#f5f7f5] min-h-screen text-[#212429]">
-      {/* Navbar */}
-      <nav className="bg-white border-b border-black/10 px-8 h-[60px] flex items-center justify-between sticky top-0 z-[100]">
-        <span className="font-bold text-[18px] text-[#1F4842] tracking-tighter">LOGO</span>
-        
-        <div className="flex gap-1 bg-[#f5f7f5] rounded-full p-1">
-          {navItems.map((item) => (
+    <div className="flex-1 overflow-auto bg-[#f3f4f6] relative">
+      {/* Success modal overlay */}
+      {successOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* dim background */}
+          <div
+            className="absolute inset-0 bg-black/10"
+            onClick={() => setSuccessOpen(false)}
+          />
+
+          {/* modal */}
+          <div className="relative z-10 w-[420px] max-w-[92vw] rounded-xl bg-white px-8 py-7 shadow-xl">
+            {/* close */}
             <button
-              key={item}
-              onClick={() => setActiveNav(item)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                activeNav === item 
-                  ? "bg-[#1F4842] text-white" 
-                  : "text-[#212429] hover:bg-[#B8F699]/20"
-              }`}
+              type="button"
+              onClick={() => setSuccessOpen(false)}
+              className="absolute right-4 top-4 text-gray-600 hover:text-gray-900 text-sm"
+              aria-label="Close"
+              title="Close"
             >
-              {item}
+              ×
             </button>
-          ))}
-        </div>
 
-        <div className="flex gap-2.5 items-center">
-          <button className="w-[38px] h-[38px] border border-black/10 rounded-full flex items-center justify-center hover:bg-[#B8F699]/20 transition-colors">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          </button>
-          <button className="w-[38px] h-[38px] border border-black/10 rounded-full flex items-center justify-center hover:bg-[#B8F699]/20 transition-colors">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          </button>
-          <div className="w-[38px] h-[38px] rounded-full bg-[#B8F699] flex items-center justify-center font-semibold text-sm text-[#1F4842]">
-            JM
+            {/* big check */}
+            <div className="flex justify-center">
+              <div className="h-16 w-16 rounded-full bg-[#0f3d3a] flex items-center justify-center">
+                <svg
+                  width="56"
+                  height="56"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-white"
+                >
+                  <path
+                    d="M20 6L9 17l-5-5"
+                    stroke="currentColor"
+                    strokeWidth="2.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div className="mt-2 text-center">
+              <div className="text-gray-900 text-[22px] font-semibold">Password Generated!</div>
+              <p className="mt-3 text-gray-600 text-[11px] leading-5">
+                Employee has been successfully added.
+                <br />
+                Provide them with this credentials to log in:
+              </p>
+
+              {/* Credentials Display */}
+              <div className="mt-4 bg-gray-50 rounded-lg p-4 space-y-2 border border-gray-200">
+                <div className="text-left">
+                  <p className="text-gray-500 text-[10px] font-medium">Email:</p>
+                  <p className="text-gray-900 text-[11px] font-semibold">{generatedEmail}</p>
+                </div>
+                <div className="text-left">
+                  <p className="text-gray-500 text-[10px] font-medium">Password:</p>
+                  <p className="text-gray-900 text-[11px] font-semibold">{generatedPassword}</p>
+                </div>
+              </div>
+
+              {/* Copy button */}
+              <button
+                onClick={handleCopyCredentials}
+                className="mt-4 w-full flex items-center justify-center gap-2 h-9 rounded bg-[#0f3d3a] text-white text-[11px] font-semibold hover:bg-[#0c312f]"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Copy all credentials
+              </button>
+
+              {/* Back to manage link */}
+              <button
+                onClick={handleBackToManage}
+                className="mt-3 text-gray-600 hover:text-gray-900 text-[11px] font-medium underline underline-offset-2"
+              >
+                Back to manage
+              </button>
+            </div>
           </div>
         </div>
-      </nav>
+      )}
 
-      {/* Main Content */}
-      <main className="max-w-[1200px] mx-auto p-6 md:p-8 flex flex-col gap-7">
-        
-        {/* Hero Banner */}
-        <div className="bg-white rounded-[20px] p-7 flex flex-col gap-4">
-          <div>
-            <h1 className="text-[28px] font-bold text-[#212429] tracking-tight">Good morning, Jamie</h1>
-            <p className="text-[15px] text-[#b5b5b5] mt-1">You have 2 courses in progress · Keep it up!</p>
-          </div>
+      {/* Center panel */}
+      <div className="px-8 pb-10 pt-8">
+        <div className="mx-auto w-full max-w-2xl bg-white border border-gray-200 rounded-md">
+          <div className="px-10 pt-8 pb-8">
+            <h1 className="text-[18px] font-semibold text-gray-900">
+              Manage Employee
+            </h1>
+            <p className="mt-1 text-[12px] text-gray-600">
+              Add a Employee to join so you can assign them course and track their progress
+            </p>
 
-          <div className="bg-[#f5f7f5] rounded-[14px] p-4 flex items-center gap-4 flex-wrap">
-            <div className="w-14 h-14 rounded-[10px] overflow-hidden shrink-0">
-              <img 
-                src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=200&q=80" 
-                className="w-full h-full object-cover" 
-                alt="current course" 
+            {/* Email field */}
+            <div className="mt-6">
+              <label className="block text-[12px] font-medium text-gray-700 mb-2">
+                Email Address of the Employee
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter Email"
+                className="w-full px-4 py-2 text-[12px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-600/40"
               />
             </div>
-            <div className="flex-1 min-w-[200px]">
-              <h4 className="text-sm font-semibold">Workplace Safety Essentials</h4>
-              <div className="flex items-center gap-3 mt-1">
-                <div className="flex-1 h-1.5 bg-black/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#1F4842] w-[28%]" />
-                </div>
-                <span className="text-[12px] font-medium text-[#1F4842]">28%</span>
-              </div>
+
+            {/* Name field */}
+            <div className="mt-4">
+              <label className="block text-[12px] font-medium text-gray-700 mb-2">
+                Name of the Employee
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter Name"
+                className="w-full px-4 py-2 text-[12px] border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-600/40"
+              />
             </div>
-            <button className="bg-[#1F4842] text-white px-[22px] py-[10px] rounded-[10px] text-sm font-medium hover:bg-[#163830] transition-colors whitespace-nowrap">
-              Resume Course
-            </button>
+
+            {/* Buttons */}
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={handleCancel}
+                className="h-9 px-6 rounded border border-gray-300 text-[12px] font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddEmployee}
+                disabled={loading}
+                className="h-9 px-6 rounded bg-[#0f3d3a] text-white text-[12px] font-medium hover:bg-[#0c312f] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "Adding..." : "Add Employee"}
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Course Grid/Scroll Area */}
-        <section>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Recommended for you</h2>
-            <button className="text-sm font-medium text-[#1F4842] hover:underline">View all</button>
-          </div>
-          
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4 overflow-x-auto pb-2">
-            {courses.map(course => (
-              <div key={course.id} className="bg-white rounded-2xl border border-black/5 overflow-hidden group cursor-pointer hover:-translate-y-1 hover:shadow-xl transition-all duration-200">
-                <img src={course.image} className="w-full h-[140px] object-cover" alt={course.title} />
-                <div className="p-4">
-                  <span className={`inline-flex px-3 py-1 rounded-full text-[12px] font-medium mb-2 ${getStatusClasses(course.status)}`}>
-                    {course.status}
-                  </span>
-                  <h3 className="font-bold text-sm leading-tight mb-1">{course.title}</h3>
-                  <p className="text-[12px] text-gray-500 line-clamp-2">{course.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-      </main>
+      </div>
     </div>
   );
 }
