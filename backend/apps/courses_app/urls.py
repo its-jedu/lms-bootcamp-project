@@ -15,6 +15,7 @@ lesson_list = LessonViewSet.as_view(
 
 lesson_detail = LessonViewSet.as_view(
     {
+        "get": "retrieve",
         "patch": "partial_update",
         "delete": "destroy",
     }

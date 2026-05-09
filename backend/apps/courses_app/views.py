@@ -108,18 +108,19 @@ class CourseAssignmentViewSet(viewsets.ViewSet):
 
         created_assignments = []
 
-        for employee_id in employee_ids:
-            for course_id in course_ids:
-                if (employee_id, course_id) in existing_pairs:
-                    continue
+        with transaction.atomic():
+            for employee_id in employee_ids:
+                for course_id in course_ids:
+                    if (employee_id, course_id) in existing_pairs:
+                        continue
 
-                assignment = CourseAssignment.objects.create(
-                    employee_id=employee_id,
-                    course_id=course_id,
-                    progress_status="not_started",
-                    is_active=True
-                )
-                created_assignments.append(assignment)
+                    assignment = CourseAssignment.objects.create(
+                        employee_id=employee_id,
+                        course_id=course_id,
+                        progress_status="not_started",
+                        is_active=True
+                    )
+                    created_assignments.append(assignment)
 
         if len(created_assignments) == 0:
             return Response(
@@ -169,22 +170,58 @@ class LessonViewSet(viewsets.ViewSet):
         if self.action in ["create", "partial_update", "reorder", "destroy"]:
             return [IsAuthenticated(), IsAdmin()]
         return [IsAuthenticated()]
-
-    def list(self, request, course_id=None):
+    
+    def _get_viewable_course(self, request, course_id):
         if request.user.role == "admin":
-            course = get_object_or_404(Course, pk=course_id)
+            return get_object_or_404(Course, pk=course_id)
         
-        else:
-            course = get_object_or_404(
-                Course, 
-                pk=course_id, 
-                status="published",
-                employee_assignments__employee=request.user,
-                employee_assignments__is_active=True,
-            )
+        course = get_object_or_404(Course, pk=course_id, status="published")
 
-        serializer = LessonSerializer(course.lessons.all(), many=True)
+        if not CourseAssignment.objects.filter(
+            employee=request.user,
+            course=course,
+            is_active=True,
+        ).exists():
+            raise PermissionDenied("You do not have permission to view lessons for this course.")
+        
+        return course
+    
+    def _ordered_lessons(self, course):
+        return course.lessons.order_by("order", "created_at", "id")
+    
+    def list(self, request, course_id=None):
+        course = self._get_viewable_course(request, course_id)
+        serializer = LessonSerializer(self._ordered_lessons(course), many=True)
         return Response(serializer.data)
+    
+    def retrieve(self, request, course_id=None, pk=None):
+        course = self._get_viewable_course(request, course_id)
+        lesson = get_object_or_404(Lesson, pk=pk, course=course)
+
+        lessons = list(self._ordered_lessons(course))
+        current_index = [item.id for item in lessons].index(lesson.id)
+
+        previous_lesson = lessons[current_index - 1] if current_index > 0 else None
+        next_lesson = lessons[current_index + 1] if current_index < len(lessons) - 1 else None
+
+        lesson_data = LessonSerializer(lesson).data
+        lesson_data.update(
+            {
+                "previous_lesson": None if previous_lesson is None else {
+                "id": previous_lesson.id,
+                "title": previous_lesson.title,
+                "order": previous_lesson.order,
+            },
+            "next_lesson": None if next_lesson is None else {
+                "id": next_lesson.id,
+                "title": next_lesson.title,
+                "order": next_lesson.order,
+            },
+            "can_go_previous": previous_lesson is not None,
+            "can_go_next": next_lesson is not None,
+            }
+        )
+        return Response(lesson_data)
 
     def create(self, request, course_id=None):
         course = get_object_or_404(Course, pk=course_id)
