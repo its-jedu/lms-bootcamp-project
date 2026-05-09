@@ -33,7 +33,11 @@ class CourseViewSet(viewsets.ViewSet):
     def _get_courses(self):
         if self.request.user.role == "admin":
             return Course.objects.all()
-        return Course.objects.filter(status="published")
+        return Course.objects.filter(
+            employee_assignments__employee=self.request.user,
+            employee_assignments__is_active=True,
+            status="published"
+        ).distinct()
 
     def list(self, request):
         serializer = CourseSerializer(self._get_courses(), many=True)
@@ -152,7 +156,8 @@ class CourseAssignmentViewSet(viewsets.ViewSet):
         
         assignments = CourseAssignment.objects.select_related("course").filter(
             employee=request.user,
-            is_active=True
+            is_active=True,
+            course__status="published"
         )
 
         serializer = AssignedCourseSerializer(assignments, many=True)
@@ -170,7 +175,13 @@ class LessonViewSet(viewsets.ViewSet):
             course = get_object_or_404(Course, pk=course_id)
         
         else:
-            course = get_object_or_404(Course, pk=course_id, status="published")
+            course = get_object_or_404(
+                Course, 
+                pk=course_id, 
+                status="published",
+                employee_assignments__employee=request.user,
+                employee_assignments__is_active=True,
+            )
 
         serializer = LessonSerializer(course.lessons.all(), many=True)
         return Response(serializer.data)

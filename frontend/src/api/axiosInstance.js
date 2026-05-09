@@ -10,7 +10,7 @@ const axiosInstance = axios.create({
 });
 
 // Store access token in memory and localStorage
-let accessToken = null;
+let accessToken = localStorage.getItem("access_token") || null;
 
 export const setAccessToken = (token) => {
   accessToken = token;
@@ -43,8 +43,10 @@ axiosInstance.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url.includes("api/auth/login/") &&
+      !originalRequest.url.includes("api/auth/logout/") &&
       !originalRequest.url.includes("api/auth/token/refresh/")
     ) {
+      originalRequest._retry = true;
       try {
         const res = await axiosInstance.post(
           `api/auth/token/refresh/`,

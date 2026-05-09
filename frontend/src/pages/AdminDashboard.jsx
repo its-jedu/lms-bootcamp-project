@@ -11,8 +11,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchCourses() {
       try {
-        const response = await axiosInstance.get("/api/courses/");
-        const data = response.data;
+        const response = await axiosInstance.get("api/courses/");
+        const data = await response.data;
         if (response.status === 200) {
           setCourses(data);
         } else {
@@ -46,57 +46,56 @@ export default function AdminDashboard() {
             </h2>
           </div>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {courses.filter((course) => course.status === "Draft").map((course) => (
-              <div
-                key={course.id}
-                className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5"
-              >
-                <div className="p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] text-gray-500">Course</p>
-                    <p className="text-[10px] text-gray-500">
-                      {course.lessons}
-                    </p>
-                  </div>
-
-                  <h3 className="mt-1 text-xs font-semibold text-gray-900">
-                    {course.name}
-                  </h3>
-                  <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-gray-500">
-                    {course.desc}
-                  </p>
-
-                  <div className="mt-3 flex flex-col items-stretch justify-between">
-                    <span
-                      className={`rounded-full px-2 py-1 text-[10px] font-semibold self-start ${
-                        course.status === "Published"
-                          ? "bg-[#dcfce7] text-[#166534]"
-                          : "bg-[#e0e7ff] text-[#3730a3]"
-                      }`}
-                    >
-                      {course.status}
-                    </span>
-
-                    <div className="flex">
-                      <button
-                        onClick={() => handleViewCourse(course.id)}
-                        className="text-[10px] font-semibold text-gray-700 hover:text-gray-900 bg-[#b8f699] rounded-full w-full py-1 mt-2"
-                      >
-                        Go to course
-                      </button>
+            {courses
+              .filter((course) => course.status.toLowerCase() === "draft")
+              .map((course) => (
+                <div
+                  key={course.id}
+                  className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5"
+                >
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-gray-500">Course</p>
                     </div>
-                  </div>
 
-                  <button
-                    onClick={() => handleEditCourse(course.id)}
-                    className="sr-only"
-                    aria-label={`Edit ${course.name}`}
-                  >
-                    Edit
-                  </button>
+                    <h3 className="mt-1 text-xs font-semibold text-gray-900">
+                      {course.title}
+                    </h3>
+                    <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-gray-500">
+                      {course.description}
+                    </p>
+
+                    <div className="mt-3 flex flex-col items-stretch justify-between">
+                      <span
+                        className={`rounded-full px-2 py-1 text-[10px] font-semibold self-start ${
+                          course.status === "Published"
+                            ? "bg-[#dcfce7] text-[#166534]"
+                            : "bg-[#e0e7ff] text-[#3730a3]"
+                        }`}
+                      >
+                        {course.status}
+                      </span>
+
+                      <div className="flex">
+                        <button
+                          onClick={() => handleViewCourse(course.id)}
+                          className="text-[10px] font-semibold text-gray-700 hover:text-gray-900 bg-[#b8f699] rounded-full w-full py-1 mt-2"
+                        >
+                          Go to course
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleEditCourse(course.id)}
+                      className="sr-only"
+                      aria-label={`Edit ${course.name}`}
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       );
@@ -118,11 +117,11 @@ export default function AdminDashboard() {
               </div>
 
               <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-              <Link to="../create-course">
-                <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-[#d9f99d]">
-                  <span className="text-xl font-bold text-[#1f4d45]">+</span>
-                </div>
-              </Link>
+                <Link to="../create-course">
+                  <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-[#d9f99d]">
+                    <span className="text-xl font-bold text-[#1f4d45]">+</span>
+                  </div>
+                </Link>
 
                 <h3 className="text-center text-sm font-semibold text-gray-900">
                   Create a Course

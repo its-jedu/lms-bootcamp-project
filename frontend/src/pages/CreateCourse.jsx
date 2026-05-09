@@ -1,7 +1,14 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axiosInstance from "@/api/axiosInstance";
+import axios from "axios";
 
-const BasicInfo = ({courseData, handleSaveDraft, setCourseData}) => (
+const BasicInfo = ({
+  courseData,
+  handleSaveDraft,
+  setCourseData,
+  setCurrentStep,
+}) => (
   <div className="max-w-2xl">
     <div className="flex items-start justify-between mb-6">
       <div>
@@ -67,7 +74,13 @@ const BasicInfo = ({courseData, handleSaveDraft, setCourseData}) => (
   </div>
 );
 
-const Sidebar = () => (
+const Sidebar = ({
+  handleAddLesson,
+  lessons,
+  handleDeleteLesson,
+  selectedLessonId,
+  setSelectedLessonId,
+}) => (
   <aside className="w-full lg:w-[260px] shrink-0">
     <div className="text-[11px] text-gray-500 mb-2">Draft</div>
 
@@ -119,7 +132,12 @@ const Sidebar = () => (
   </aside>
 );
 
-const CourseMaterialRight = () => (
+const CourseMaterialRight = ({
+  selectedLesson,
+  updateLesson,
+  uploadedFiles,
+  handleSaveDraft,
+}) => (
   <div className="flex-1">
     <div>
       <div className="text-[13px] font-semibold text-gray-900">
@@ -370,7 +388,7 @@ const CourseMaterialRight = () => (
   </div>
 );
 
-const Review = () => (
+const Review = ({ courseData, handleBackStep, handlePublish }) => (
   <div className="max-w-5xl">
     <div className="text-[13px] font-semibold text-gray-900 mb-1">
       Review & Publish
@@ -426,9 +444,7 @@ export default function CreateCourse() {
   const [currentStep, setCurrentStep] = useState(1);
   const [courseData, setCourseData] = useState({
     title: "",
-    description: "",
-    category: "",
-    thumbnail: null,
+    description: ""
   });
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
 
@@ -456,9 +472,15 @@ export default function CreateCourse() {
     setCurrentStep((prev) => (prev > 1 ? prev - 1 : prev));
   };
 
-  const handleSaveDraft = () => {
-    console.log("Draft:", { courseData, modules });
-    navigate("/admin/dashboard");
+  const handleSaveDraft = async(e) => {
+    try {
+      e.preventDefault();
+      await axiosInstance.post("/api/courses/", courseData);
+      alert("Draft saved successfully!");
+    } catch (error) {
+      console.error("Error saving draft:", error);
+      alert("Failed to save draft.");
+    }
   };
 
   const handlePublish = () => {
@@ -544,12 +566,39 @@ export default function CreateCourse() {
                 currentStep === 1 ? "" : "mt-2 flex flex-col lg:flex-row gap-8"
               }
             >
-              {currentStep !== 1 && <Sidebar />}
+              {currentStep !== 1 && (
+                <Sidebar
+                  handleAddLesson={handleAddLesson}
+                  lessons={lessons}
+                  handleDeleteLesson={handleDeleteLesson}
+                  selectedLessonId={selectedLessonId}
+                  setSelectedLessonId={setSelectedLessonId}
+                />
+              )}
 
               <div className={currentStep === 1 ? "" : "flex-1"}>
-                {currentStep === 1 && <BasicInfo courseData={courseData} handleSaveDraft={handleSaveDraft} setCourseData={setCourseData} />}
-                {currentStep === 2 && <CourseMaterialRight />}
-                {currentStep === 3 && <Review />}
+                {currentStep === 1 && (
+                  <BasicInfo
+                    courseData={courseData}
+                    handleSaveDraft={handleSaveDraft}
+                    setCourseData={setCourseData}
+                    setCurrentStep={setCurrentStep}
+                  />
+                )}
+                {currentStep === 2 && (
+                  <CourseMaterialRight
+                    selectedLesson={selectedLesson}
+                    uploadedFiles={uploadedFiles}
+                    handleSaveDraft={handleSaveDraft}
+                  />
+                )}
+                {currentStep === 3 && (
+                  <Review
+                    courseData={courseData}
+                    handleBackStep={handleBackStep}
+                    handlePublish={handlePublish}
+                  />
+                )}
               </div>
             </div>
           </div>
