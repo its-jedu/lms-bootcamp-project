@@ -243,11 +243,22 @@ git push origin your-branch-name
 
 # API Endpoints Documentation
 
-## AUTHENTICATION
+API base URL for local development:
 
-### 1. Login (Shared)
+```text
+http://127.0.0.1:8000/
+```
 
-**Endpoint:** `POST /api/auth/login`
+Most protected endpoints require:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+## Authentication
+
+<details>
+<summary><strong>POST /api/auth/login/</strong> - Login</summary>
 
 **Request:**
 
@@ -273,9 +284,10 @@ git push origin your-branch-name
 }
 ```
 
-### 2. Forgot Password (Request Reset Link)
+</details>
 
-**Endpoint:** `POST /api/auth/forgot-password`
+<details>
+<summary><strong>POST /api/auth/forgot-password/</strong> - Request Password Reset</summary>
 
 **Request:**
 
@@ -295,9 +307,10 @@ git push origin your-branch-name
 }
 ```
 
-### 3. Reset Password (With Token)
+</details>
 
-**Endpoint:** `POST /api/auth/reset-password`
+<details>
+<summary><strong>POST /api/auth/reset-password/</strong> - Reset Password</summary>
 
 **Request:**
 
@@ -325,19 +338,16 @@ git push origin your-branch-name
 }
 ```
 
+</details>
+
 ---
 
-## ADMIN ENDPOINTS (Requires role=admin)
+## Admin Endpoints
 
-### 4. Admin Dashboard
+<details>
+<summary><strong>GET /api/admin/dashboard/</strong> - Admin Dashboard</summary>
 
-**Endpoint:** `GET /api/admin/dashboard`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-```
+**Requires:** `role=admin`
 
 **Response (200 OK):**
 
@@ -349,15 +359,12 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### 5. List All Employees
+</details>
 
-**Endpoint:** `GET /api/users`
+<details>
+<summary><strong>GET /api/users/</strong> - List All Users</summary>
 
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-```
+**Requires:** `role=admin`
 
 **Response (200 OK):**
 
@@ -372,30 +379,16 @@ Authorization: Bearer <access_token>
     "position": "Developer",
     "role": "employee",
     "created_at": "2026-04-08T10:00:00Z"
-  },
-  {
-    "id": 3,
-    "first_name": "Jane",
-    "last_name": "Smith",
-    "email": "jane@example.com",
-    "phone_number": "+1987654321",
-    "position": "Designer",
-    "role": "employee",
-    "created_at": "2026-04-08T11:00:00Z"
   }
 ]
 ```
 
-### 6. Create Employee
+</details>
 
-**Endpoint:** `POST /api/admin/employees`
+<details>
+<summary><strong>POST /api/admin/employees/</strong> - Create Employee</summary>
 
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
+**Requires:** `role=admin`
 
 **Request:**
 
@@ -419,24 +412,97 @@ Content-Type: application/json
 }
 ```
 
-**Error Response (422 Unprocessable Entity):**
+</details>
+
+<details>
+<summary><strong>GET /api/admin/employees/list/</strong> - List Employees</summary>
+
+**Requires:** `role=admin`
+
+Returns employees for admin selection and management.
+
+</details>
+
+<details>
+<summary><strong>DELETE /api/admin/employees/delete/</strong> - Bulk Delete Employees</summary>
+
+**Requires:** `role=admin`
+
+**Request:**
 
 ```json
 {
-  "email": ["User with this email already exists"],
-  "name": ["Please provide both first and last name"]
+  "employee_ids": [2, 3]
 }
 ```
 
-### 7. List All Courses
+</details>
 
-**Endpoint:** `GET /api/courses/`
+<details>
+<summary><strong>POST /api/admin/course-assignments/</strong> - Assign Courses</summary>
 
-**Headers:**
+**Requires:** `role=admin`
 
+**Request:**
+
+```json
+{
+  "employee_ids": [2, 3],
+  "course_ids": [1]
+}
 ```
-Authorization: Bearer <access_token>
+
+**Response (201 Created):**
+
+```json
+{
+  "message": "Course assignment processed successfully.",
+  "created_count": 2
+}
 ```
+
+**Notes:**
+
+- Employees must exist, be active, and have `role=employee`.
+- Courses must exist and be `published`.
+- Duplicate assignments are skipped; if all requested assignments already exist, the endpoint returns `409 Conflict`.
+
+</details>
+
+<details>
+<summary><strong>GET /api/admin/course-assignments/</strong> - List Course Assignments</summary>
+
+**Requires:** `role=admin`
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "id": 1,
+    "employee_id": 2,
+    "employee_email": "employee@example.com",
+    "course_id": 1,
+    "course_title": "Python Basics",
+    "progress_status": "not_started",
+    "assigned_at": "2026-04-08T10:00:00Z",
+    "started_at": null,
+    "completed_at": null,
+    "is_active": true
+  }
+]
+```
+
+</details>
+
+---
+
+## Course Endpoints
+
+<details>
+<summary><strong>GET /api/courses/</strong> - List Courses</summary>
+
+**Requires:** authenticated user
 
 **Response (200 OK):**
 
@@ -449,28 +515,21 @@ Authorization: Bearer <access_token>
     "status": "draft",
     "created_at": "2026-04-08T10:00:00Z",
     "updated_at": "2026-04-08T10:00:00Z"
-  },
-  {
-    "id": 2,
-    "title": "Django REST Framework",
-    "description": "Build APIs with DRF",
-    "status": "draft",
-    "created_at": "2026-04-08T11:00:00Z",
-    "updated_at": "2026-04-08T11:00:00Z"
   }
 ]
 ```
 
-### 8. Create Course
+**Notes:**
 
-**Endpoint:** `POST /api/courses/`
+- Admin users can view all courses.
+- Employee users can view published courses.
 
-**Headers:**
+</details>
 
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
+<details>
+<summary><strong>POST /api/courses/</strong> - Create Course</summary>
+
+**Requires:** `role=admin`
 
 **Request:**
 
@@ -494,26 +553,28 @@ Content-Type: application/json
 }
 ```
 
-**Error Response (422 Unprocessable Entity):**
+**Notes:**
 
-```json
-{
-  "title": ["This field is required"]
-}
-```
+- New courses are created as `draft` by default.
 
-### 9. Update Course / Publish Toggle
+</details>
 
-**Endpoint:** `PATCH /api/courses/{course_id}/`
+<details>
+<summary><strong>GET /api/courses/{course_id}/</strong> - Retrieve Course</summary>
+
+**Requires:** authenticated user
+
+**Notes:**
+
+- Admin users can retrieve draft or published courses.
+- Employee users can retrieve published courses.
+
+</details>
+
+<details>
+<summary><strong>PATCH /api/courses/{course_id}/</strong> - Update Course / Publish Toggle</summary>
 
 **Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
 
 **Request:**
 
@@ -544,24 +605,25 @@ To unpublish a course:
 }
 ```
 
-**Notes:**
+</details>
 
-- New courses are created as `draft` by default.
-- Valid course status values are `draft` and `published`.
-- Admin users can view all courses.
-- Employee users can only view published courses.
+<details>
+<summary><strong>PATCH /api/courses/{course_id}/publish/</strong> - Publish Course</summary>
 
-### 10. List Course Lessons
+**Requires:** `role=admin`
 
-**Endpoint:** `GET /api/courses/{course_id}/lessons/`
+Sets the course status to `published`.
+
+</details>
+
+---
+
+## Lesson Endpoints
+
+<details>
+<summary><strong>GET /api/courses/{course_id}/lessons/</strong> - List Course Lessons</summary>
 
 **Requires:** authenticated user
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-```
 
 **Response (200 OK):**
 
@@ -592,20 +654,82 @@ Authorization: Bearer <access_token>
 
 - Lessons are returned in ascending `order`.
 - Admin users can view lessons for draft and published courses.
-- Employee users can only view lessons if the course is published.
+- Employee users can only view lessons for published courses assigned to them.
 
-### 11. Create Lesson
+</details>
 
-**Endpoint:** `POST /api/courses/{course_id}/lessons/`
+<details>
+<summary><strong>GET /api/courses/{course_id}/lessons/{lesson_id}/</strong> - Retrieve Lesson with Navigation</summary>
+
+**Requires:** authenticated user
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 5,
+  "course": 4,
+  "title": "Lesson Two",
+  "objective": "Second lesson",
+  "order": 2,
+  "created_at": "2026-05-10T10:00:00Z",
+  "updated_at": "2026-05-10T10:00:00Z",
+  "previous_lesson": {
+    "id": 4,
+    "title": "Lesson One",
+    "order": 1
+  },
+  "next_lesson": {
+    "id": 6,
+    "title": "Lesson Three",
+    "order": 3
+  },
+  "can_go_previous": true,
+  "can_go_next": true
+}
+```
+
+**Boundary behavior:**
+
+First lesson:
+
+```json
+{
+  "previous_lesson": null,
+  "can_go_previous": false
+}
+```
+
+Last lesson:
+
+```json
+{
+  "next_lesson": null,
+  "can_go_next": false
+}
+```
+
+**Frontend handoff:**
+
+- Use `previous_lesson.id` for the Previous button target.
+- Use `next_lesson.id` for the Next button target.
+- Disable Previous when `can_go_previous` is `false` or `previous_lesson` is `null`.
+- Disable Next when `can_go_next` is `false` or `next_lesson` is `null`.
+
+**Notes:**
+
+- Navigation follows lesson `order`.
+- Admin users can retrieve lessons from draft or published courses.
+- Employee users can only retrieve lessons for published courses assigned to them.
+- Returns `403 Forbidden` if an employee is not assigned to the course.
+- Returns `404 Not Found` if the lesson does not belong to the course.
+
+</details>
+
+<details>
+<summary><strong>POST /api/courses/{course_id}/lessons/</strong> - Create Lesson</summary>
 
 **Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
 
 **Request:**
 
@@ -635,18 +759,12 @@ Content-Type: application/json
 - `order` is assigned automatically.
 - New lessons are added to the end of the course.
 
-### 12. Update Lesson
+</details>
 
-**Endpoint:** `PATCH /api/courses/{course_id}/lessons/{lesson_id}/`
+<details>
+<summary><strong>PATCH /api/courses/{course_id}/lessons/{lesson_id}/</strong> - Update Lesson</summary>
 
 **Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
 
 **Request:**
 
@@ -657,46 +775,21 @@ Content-Type: application/json
 }
 ```
 
-**Response (200 OK):**
+</details>
 
-```json
-{
-  "id": 1,
-  "course": 3,
-  "title": "Updated Lesson Title",
-  "objective": "Updated learning objective",
-  "order": 1,
-  "created_at": "2026-04-08T10:00:00Z",
-  "updated_at": "2026-04-08T11:00:00Z"
-}
-```
-
-### 13. Delete Lesson
-
-**Endpoint:** `DELETE /api/courses/{course_id}/lessons/{lesson_id}/`
+<details>
+<summary><strong>DELETE /api/courses/{course_id}/lessons/{lesson_id}/</strong> - Delete Lesson</summary>
 
 **Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-```
 
 **Response:** `204 No Content`
 
-### 14. Reorder Lessons
+</details>
 
-**Endpoint:** `PATCH /api/courses/{course_id}/lessons/reorder/`
+<details>
+<summary><strong>PATCH /api/courses/{course_id}/lessons/reorder/</strong> - Reorder Lessons</summary>
 
 **Requires:** `role=admin`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
 
 **Request:**
 
@@ -718,24 +811,6 @@ Content-Type: application/json
     "order": 1,
     "created_at": "2026-04-08T10:30:00Z",
     "updated_at": "2026-04-08T11:00:00Z"
-  },
-  {
-    "id": 1,
-    "course": 3,
-    "title": "Introduction to Python",
-    "objective": "",
-    "order": 2,
-    "created_at": "2026-04-08T10:00:00Z",
-    "updated_at": "2026-04-08T11:00:00Z"
-  },
-  {
-    "id": 2,
-    "course": 3,
-    "title": "Data Analysis",
-    "objective": "",
-    "order": 3,
-    "created_at": "2026-04-08T10:10:00Z",
-    "updated_at": "2026-04-08T11:00:00Z"
   }
 ]
 ```
@@ -746,19 +821,106 @@ Content-Type: application/json
 - Duplicate lesson IDs are not allowed.
 - All lesson IDs must belong to the selected course.
 
+</details>
+
 ---
 
-## EMPLOYEE ENDPOINTS (Requires role=employee)
+## Material Endpoints
 
-### 15. Get Employee Profile
+<details>
+<summary><strong>GET /api/lessons/{lesson_id}/materials/</strong> - List Lesson Materials</summary>
 
-**Endpoint:** `GET /api/employee/profile`
+**Requires:** authenticated user
 
-**Headers:**
+**Notes:**
 
+- Admin users can view materials for any lesson.
+- Employee users can only view materials for assigned courses.
+
+</details>
+
+<details>
+<summary><strong>POST /api/lessons/{lesson_id}/materials/file/</strong> - Upload File Material</summary>
+
+**Requires:** `role=admin`
+
+Accepts multipart file uploads for supported PDF and audio files.
+
+</details>
+
+<details>
+<summary><strong>POST /api/lessons/{lesson_id}/materials/text/</strong> - Create Text Material</summary>
+
+**Requires:** `role=admin`
+
+**Request:**
+
+```json
+{
+  "text_content": "Lesson notes go here"
+}
 ```
-Authorization: Bearer <access_token>
+
+</details>
+
+<details>
+<summary><strong>POST /api/lessons/{lesson_id}/materials/video/</strong> - Create Video Material</summary>
+
+**Requires:** `role=admin`
+
+**Request:**
+
+```json
+{
+  "video_url": "https://www.youtube.com/watch?v=abc123"
+}
 ```
+
+**Notes:**
+
+- Only YouTube URLs are supported.
+
+</details>
+
+<details>
+<summary><strong>DELETE /api/lessons/{lesson_id}/materials/{material_id}/</strong> - Delete Material</summary>
+
+**Requires:** `role=admin`
+
+</details>
+
+---
+
+## Employee Endpoints
+
+<details>
+<summary><strong>GET /api/employee/assigned-courses/</strong> - My Assigned Courses</summary>
+
+**Requires:** `role=employee`
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "assignment_id": 1,
+    "course_id": 4,
+    "title": "Story 12 Test Course",
+    "description": "Course for testing lesson navigation",
+    "progress_status": "not_started",
+    "assigned_at": "2026-05-10T10:00:00Z",
+    "started_at": null,
+    "completed_at": null
+  }
+]
+```
+
+</details>
+
+<details>
+<summary><strong>GET /api/employee/profile/</strong> - Get Employee Profile</summary>
+
+**Requires:** `role=employee`
 
 **Response (200 OK):**
 
@@ -775,18 +937,14 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### 16. Update Employee Profile
+</details>
 
-**Endpoint:** `PUT /api/employee/profile`
+<details>
+<summary><strong>PUT /api/employee/profile/</strong> - Update Employee Profile</summary>
 
-**Headers:**
+**Requires:** `role=employee`
 
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
-
-**Request (Partial update allowed):**
+**Request:**
 
 ```json
 {
@@ -796,63 +954,27 @@ Content-Type: application/json
 }
 ```
 
-**Response (200 OK):**
+</details>
 
-```json
-{
-  "message": "Profile updated successfully",
-  "profile": {
-    "id": 2,
-    "first_name": "Jonathan",
-    "last_name": "Doe",
-    "email": "john@example.com",
-    "phone_number": "+9876543210",
-    "position": "Senior Software Developer",
-    "role": "employee",
-    "created_at": "2026-04-08T10:00:00Z"
-  }
-}
-```
+<details>
+<summary><strong>POST /api/employee/change-password/</strong> - Change Employee Password</summary>
 
-### 17. Change Employee Password
-
-**Endpoint:** `POST /api/employee/change-password`
-
-**Headers:**
-
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
+**Requires:** `role=employee`
 
 **Request:**
 
 ```json
 {
-  "current_password": "DOE",
+  "current_password": "OldPassword123!",
   "new_password": "NewStrong@123"
 }
 ```
 
-**Response (200 OK):**
-
-```json
-{
-  "message": "Password changed successfully"
-}
-```
-
-**Error Response (400 Bad Request):**
-
-```json
-{
-  "current_password": ["Wrong password"]
-}
-```
+</details>
 
 ---
 
-## ERROR RESPONSES
+## Error Responses
 
 ### 401 Unauthorized (Invalid/No Token)
 
