@@ -29,7 +29,7 @@ export default function TrackProgress() {
       case "in_progress":
         return "bg-blue-100 text-blue-700";
       case "not_started":
-        return "bg-red-100 text-red-700";
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -77,10 +77,10 @@ export default function TrackProgress() {
     <div className="flex-1 overflow-auto bg-[#f3f4f6]">
       {/* Header */}
       <div className="px-8 pt-6 pb-4">
-        <h1 className="text-[18px] font-semibold text-gray-900 animate-in fade-in slide-in-from-left-4 duration-300">
+        <h1 className="text-[32px] font-bold text-[#1F4842] animate-in fade-in slide-in-from-left-4 duration-300">
           Track Progress
         </h1>
-        <p className="mt-1 text-[12px] text-gray-600 animate-in fade-in slide-in-from-left-4 duration-300 delay-100">
+        <p className="mt-1 text-[16px] text-[#1F4842] animate-in fade-in slide-in-from-left-4 duration-300 delay-100">
           Monitor employee learning progress and course completion
         </p>
       </div>

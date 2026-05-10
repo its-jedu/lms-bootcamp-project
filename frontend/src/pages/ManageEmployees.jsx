@@ -180,10 +180,10 @@ export default function ManageEmployees() {
       <div className="px-8 pb-10 pt-8">
         <div className="mx-auto w-full max-w-2xl bg-white border border-gray-200 rounded-md">
           <div className="px-10 pt-8 pb-8">
-            <h1 className="text-[18px] font-semibold text-gray-900">
+            <h1 className="text-[32px] font-bold text-[#1F4842]">
               Manage Employee
             </h1>
-            <p className="mt-1 text-[12px] text-gray-600">
+            <p className="mt-1 text-[16px] font-normal  text-[#1F4842]">
               Add a Employee to join so you can assign them course and track their progress
             </p>
 
