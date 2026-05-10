@@ -204,10 +204,10 @@ export default function AssignCourse() {
       <div className="px-8 pb-10 pt-4">
         <div className="mx-auto w-full max-w-3xl bg-white border border-gray-200 rounded-md animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="px-10 pt-8 pb-6">
-            <h1 className="text-[15px] font-semibold text-gray-900 animate-in fade-in slide-in-from-left-2 duration-300">
+            <h1 className="text-[32px] font-bold text-[#1F4842] animate-in fade-in slide-in-from-left-2 duration-300">
               Assign Course
             </h1>
-            <p className="mt-1 text-[11px] text-gray-500 animate-in fade-in slide-in-from-left-2 duration-300 delay-100">
+            <p className="mt-1 text-[16px] font-normal text-[#1F4842] animate-in fade-in slide-in-from-left-2 duration-300 delay-100">
               Assign courses and add, remove or edit employees as needed
             </p>
 
@@ -215,10 +215,10 @@ export default function AssignCourse() {
             <div className="mt-6 animate-in fade-in duration-300 delay-150">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-[13px] font-semibold text-gray-900">
+                  <h2 className="text-[32px] font-bold text-[#1F4842]">
                     Select Employees
                   </h2>
-                  <p className="mt-1 text-[11px] text-gray-500">
+                  <p className="mt-1 text-[16px] font-normal text-[#1F4842]">
                     Select one or more employees to assign the course
                   </p>
                 </div>
@@ -311,10 +311,10 @@ export default function AssignCourse() {
             <div className="mt-10 animate-in fade-in duration-300 delay-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-[13px] font-semibold text-gray-900">
+                  <h2 className="text-[32px] font-bold text-[#1F4842]">
                     Select Course
                   </h2>
-                  <p className="mt-1 text-[11px] text-gray-500">
+                  <p className="mt-1 text-[16px] font-normal text-[#1F4842]">
                     Select Course to assign the course
                   </p>
                 </div>
