@@ -103,7 +103,7 @@ class CourseAssignmentViewSet(viewsets.ViewSet):
         )
 
         created_assignments = []
-
+       
         for employee_id in employee_ids:
             for course_id in course_ids:
                 if (employee_id, course_id) in existing_pairs:
@@ -144,11 +144,11 @@ class CourseAssignmentViewSet(viewsets.ViewSet):
             )
         
         # NOT necessary as authentication logic checks this condition
-        elif not request.user.is_active:
-            return Response(
-                {"error": "Unauthorized access not allowed."},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+        # elif not request.user.is_active:
+        #     return Response(
+        #         {"error": "Unauthorized access not allowed."},
+        #         status=status.HTTP_401_UNAUTHORIZED
+        #     )
         
         assignments = CourseAssignment.objects.select_related("course").filter(
             employee=request.user,
