@@ -173,7 +173,7 @@ export default function EmployeeOverview() {
           </div>
 
           <button
-            onClick={() => navigate(`./courses/${priorityCourse.id}`)}
+            onClick={() => navigate(`/employee/courses/${priorityCourse.id}`)}
             className="rounded-xl bg-[#1F4842] px-6 py-2.5 text-white hover:bg-[#1a3d37] transition-colors font-medium flex items-center gap-2"
           >
             {hasStartedPriority ? (
