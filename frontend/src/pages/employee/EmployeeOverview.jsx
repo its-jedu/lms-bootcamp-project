@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import CourseCard from "./CourseCard";
-import axiosInstance from "@/api/axiosInstance";
+import cachedApi from "../../api/cachedApi";
+import axiosInstance from "../../api/axiosInstance";
 
 export default function EmployeeOverview() {
   const navigate = useNavigate();
@@ -13,20 +14,27 @@ export default function EmployeeOverview() {
   useEffect(() => {
     (async () => {
       try {
-        const [profileResponse, coursesResponse] = await Promise.all([
-          axiosInstance.get("api/employee/profile/"),
-          axiosInstance.get("api/employee/assigned-courses/"),
-        ]);
+        const profileResponse = await cachedApi.get("api/employee/profile/", {
+          ttl: 10 * 60 * 1000,
+          cacheKey: "employee_profile",
+        });
+        
+        const coursesResponse = await cachedApi.get("api/employee/assigned-courses/", {
+          ttl: 5 * 60 * 1000,
+          cacheKey: "employee_assigned_courses",
+        });
         
         setEmployeeProfile(profileResponse.data);
         
-        // Process courses with enhanced data
         const processedCourses = await Promise.all(
           coursesResponse.data.map(async (course) => {
-            // Fetch lessons for each course to get lesson count
             try {
-              const lessonsResponse = await axiosInstance.get(
-                `api/courses/${course.course_id}/lessons/`
+              const lessonsResponse = await cachedApi.get(
+                `api/courses/${course.course_id}/lessons/`,
+                {
+                  ttl: 10 * 60 * 1000,
+                  cacheKey: `course_lessons_${course.course_id}`,
+                }
               );
               const lessons = lessonsResponse.data;
               const completedLessons = course.progress_status === "completed" 
@@ -35,7 +43,6 @@ export default function EmployeeOverview() {
                   ? Math.floor(Math.random() * (lessons.length - 1)) + 1 
                   : 0;
               
-              // Calculate progress based on completed lessons
               const progress = course.progress_status === "completed" 
                 ? 100 
                 : course.progress_status === "in_progress" 
@@ -53,7 +60,6 @@ export default function EmployeeOverview() {
                 assignmentId: course.assignment_id,
               };
             } catch (error) {
-              // Fallback if lessons endpoint fails
               return {
                 id: course.course_id,
                 title: course.title,
@@ -113,7 +119,6 @@ export default function EmployeeOverview() {
   const inProgress = courseData?.filter((c) => c.progress > 0 && c.progress < 100).length;
   const notStarted = courseData?.length - completed - inProgress;
   
-  // Get the first in-progress course, or the first not-started course
   const priorityCourse = courseData?.find((c) => c.status === "in_progress") || 
                         courseData?.find((c) => c.status === "not_started") ||
                         courseData?.[0];
