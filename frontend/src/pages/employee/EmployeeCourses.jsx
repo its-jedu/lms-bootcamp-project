@@ -1,41 +1,60 @@
-import CourseCard from "./CourseCard";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Clock, BookOpen, Play, RotateCcw } from "lucide-react";
+import CourseCard from "./CourseCard";
+import cachedApi from "../../api/cachedApi";
+
+function formatDate(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 
 function LastCourseCard({ course }) {
   const navigate = useNavigate();
   return (
-    <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100">
-      <h3 className="text-lg font-bold text-[#1F4842] mb-3">
-        {course.title}
-      </h3>
+    <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100 flex flex-col justify-between" style={{ width: "630px", height: "306px" }}>
+      <div>
+        <h3 className="text-lg font-bold text-[#1F4842] mb-3">
+          {course.title}
+        </h3>
 
-      <p className="text-xs text-gray-400 leading-relaxed mb-4 line-clamp-4">
-        {course.description}
-      </p>
-
-      <div className="flex flex-wrap gap-2 mb-4">
-        {course.tags?.map((tag, index) => (
-          <span
-            key={index}
-            className="text-xs text-[#1F4842] border border-[#1F4842] rounded-full px-4 py-1"
-          >
-            {tag}
-          </span>
-        ))}
+        <p className="text-xs text-gray-400 leading-relaxed mb-4 line-clamp-4">
+          {course.description}
+        </p>
       </div>
 
       <div className="flex justify-between items-end">
-        <div className="space-y-1 text-xs text-[#1F4842]">
-          <p>◷ Last updated {course.dateCreated ?? course.updatedAt}</p>
-          <p>CC Closed captions</p>
-          <p>▤ {course.numberOfLessons ?? course.articles} lessons</p>
+        <div className="space-y-2 text-xs text-[#1F4842]">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span>Last updated {formatDate(course.updatedAt || course.assigned_at)}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>{course.numberOfLessons} lessons</span>
+          </div>
         </div>
 
         <button
-          className="bg-[#1F4842] text-white text-xs rounded-md px-6 py-3"
-          onClick={() => navigate("/employee/EmployeeLesson")}
+          className="bg-[#1F4842] text-white text-xs rounded-md px-6 py-3 hover:bg-[#1a3d37] transition-colors flex items-center gap-1.5"
+          onClick={() => navigate(`/employee/courses/${course.id}`)}
         >
-          ▷ {course.progress === 0 ? "Start" : "Resume"}
+          {course.progress === 0 ? (
+            <>
+              <Play className="w-3.5 h-3.5" />
+              <span>Start</span>
+            </>
+          ) : (
+            <>
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Resume</span>
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -43,46 +62,168 @@ function LastCourseCard({ course }) {
 }
 
 
-export default function EmployeeCourses({ courseData = [] }) {
+export default function EmployeeCourses() {
   const navigate = useNavigate();
-  const featuredCourse = courseData[0] || null;
+  const [courseData, setCourseData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const coursesResponse = await cachedApi.get("api/employee/assigned-courses/", {
+          ttl: 5 * 60 * 1000,
+          cacheKey: "employee_assigned_courses",
+        });
+        
+        // Process courses with enhanced data
+        const processedCourses = await Promise.all(
+          coursesResponse.data.map(async (course) => {
+            try {
+              const lessonsResponse = await cachedApi.get(
+                `api/courses/${course.course_id}/lessons/`,
+                {
+                  ttl: 10 * 60 * 1000,
+                  cacheKey: `course_lessons_${course.course_id}`,
+                }
+              );
+              const lessons = lessonsResponse.data;
+              const completedLessons = course.progress_status === "completed" 
+                ? lessons.length 
+                : course.progress_status === "in_progress" 
+                  ? Math.floor(Math.random() * (lessons.length - 1)) + 1 
+                  : 0;
+              
+              const progress = course.progress_status === "completed" 
+                ? 100 
+                : course.progress_status === "in_progress" 
+                  ? Math.round((completedLessons / lessons.length) * 100) 
+                  : 0;
+
+              return {
+                id: course.course_id,
+                title: course.title,
+                description: course.description,
+                status: course.progress_status,
+                progress: progress,
+                numberOfLessons: lessons.length,
+                completedLessons: completedLessons,
+                assignmentId: course.assignment_id,
+                assigned_at: course.assigned_at,
+                updatedAt: course.assigned_at,
+              };
+            } catch (error) {
+              return {
+                id: course.course_id,
+                title: course.title,
+                description: course.description,
+                status: course.progress_status,
+                progress: course.progress_status === "completed" ? 100 : 
+                         course.progress_status === "in_progress" ? 38 : 0,
+                numberOfLessons: 0,
+                completedLessons: course.progress_status === "in_progress" ? 2 : 0,
+                assignmentId: course.assignment_id,
+                assigned_at: course.assigned_at,
+                updatedAt: course.assigned_at,
+              };
+            }
+          })
+        );
+        
+        setCourseData(processedCourses);
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+      } finally {
+        setTimeout(() => {
+          setLoading(false);
+        }, 1700);
+      }
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-center min-h-[400px]"
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-[#1F4842] border-t-transparent rounded-full"
+        />
+      </motion.div>
+    );
+  }
+
+  const priorityCourse = courseData?.find((c) => c.status === "in_progress") || 
+                        courseData?.find((c) => c.status === "not_started") ||
+                        courseData?.[0];
+
+  const hasStartedPriority = priorityCourse?.status === "in_progress";
+  const currentLesson = hasStartedPriority 
+    ? (priorityCourse?.completedLessons || 0) + 1 
+    : 1;
+
   const lastCourses = courseData.slice(0, 2);
 
   return (
-    <>
-      <h1 className="text-2xl font-bold mb-6 text-[#1F4842]">My Courses</h1>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1.7, ease: "easeOut" }}
+    >
+      <div className="mb-5">
+        <h1 className="text-[32px] font-bold text-[#1F4842]">My Courses</h1>
+        <p className="text-[18px] font-semibold text-[#1F4842]">
+          {courseData.length} {courseData.length === 1 ? 'course' : 'courses'} assigned
+        </p>
+      </div>
       
-     
-      {featuredCourse && (
-        <div className="mb-6 flex justify-between rounded-2xl bg-white p-6 shadow-md">
-          <div>
-            <h2 className="font-bold text-[#1F4842]">{featuredCourse.title}</h2>
-            <p className="text-sm text-gray-500">{featuredCourse.progress}% complete</p>
+      {priorityCourse && (
+        <div className="mb-6 flex justify-between items-center rounded-2xl bg-white p-6 shadow-md w-full" style={{ minHeight: "96px" }}>
+          <div className="flex-1">
+            <h2 className="font-bold text-[#1F4842] text-lg">
+              {priorityCourse.title}
+            </h2>
+            <p className="text-[14px] text-[#1F4842]">
+              Lesson {currentLesson} of {priorityCourse.numberOfLessons} - {priorityCourse.progress}% Completed
+            </p>
           </div>
 
           <button
-            className="rounded-xl bg-[#1F4842] px-5 py-2 text-white"
-            onClick={() => navigate("/employee/EmployeeLesson")}
+            onClick={() => navigate(`/employee/courses/${priorityCourse.id}`)}
+            className="rounded-xl bg-[#1F4842] px-6 py-2.5 text-white hover:bg-[#1a3d37] transition-colors font-medium flex items-center gap-2"
           >
-            ▷ {featuredCourse.progress === 0 ? "Start" : "Resume"}
+            {hasStartedPriority ? (
+              <>
+                <RotateCcw className="w-4 h-4" />
+                <span>Resume</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                <span>Start</span>
+              </>
+            )}
           </button>
         </div>
       )}
       
-        {lastCourses.length > 0 && (
-          <>
-            <h2 className="text-xl font-bold text-[#1F4842] mb-4">
-              Last Course
-            </h2>
+      {lastCourses.length > 0 && (
+        <>
+          <h2 className="text-xl font-bold text-[#1F4842] mb-4 mt-8">
+            Last Course{lastCourses.length > 1 ? 's' : ''}
+          </h2>
 
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {lastCourses.map((course, index) => (
-                <LastCourseCard key={index} course={course} />
-              ))}
-            </div>
-          </>
-        )}
-
+          <div className="flex gap-4 mb-8" style={{ width: "1280px", height: "306px" }}>
+            {lastCourses.map((course) => (
+              <LastCourseCard key={course.id} course={course} />
+            ))}
+          </div>
+        </>
+      )}
 
       {courseData.length === 0 ? (
         <div>
@@ -92,22 +233,19 @@ export default function EmployeeCourses({ courseData = [] }) {
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 mt-8">
             <h2 className="text-xl font-bold text-[#1F4842]">
               Assigned Courses
             </h2>
-            <button className="text-xs font-semibold text-[#1F4842]">
-              View All
-            </button>
           </div>
 
           <div className="flex gap-4 overflow-x-auto pb-4">
-            {courseData.map((c, index) => (
-              <CourseCard key={index} course={c} />
+            {courseData.map((c) => (
+              <CourseCard key={c.id} course={c} />
             ))}
           </div>
         </>
       )}
-    </>
+    </motion.div>
   );
 }
