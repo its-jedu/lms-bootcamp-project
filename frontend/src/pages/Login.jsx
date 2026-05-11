@@ -20,11 +20,6 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    /* 
-     Catches the state where credentials are wrong
-     It throws an error and resets setLoading 
-    */
-
     try{
       const data = await login(formdata);
       const role = data?.user?.role;
