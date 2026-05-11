@@ -137,8 +137,18 @@ if not DEBUG:
         'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
         'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
     }
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
+    # Custom storage to handle all file types properly  
+    from cloudinary_storage.storage import MediaCloudinaryStorage
+    import cloudinary    
+      
+    class CustomCloudinaryStorage(MediaCloudinaryStorage):
+        def _upload(self, name, content, options=None):
+            if options is None:
+                options = {}
+            options['resource_type'] = 'auto'
+            return cloudinary.uploader.upload(content, **options)
+    
+    DEFAULT_FILE_STORAGE = 'config.settings.CustomCloudinaryStorage'
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/settings/#auth-password-validators

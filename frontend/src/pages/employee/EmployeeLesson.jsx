@@ -467,7 +467,6 @@ export default function EmployeeLesson() {
             }`}
             onClick={handleMarkComplete}
           >
-            <CheckCircle2 className="w-4 h-4 mr-1.5" />
             {currentLessonStatus === "completed" ? "Completed" : "Mark as Completed"}
           </Button>
 
@@ -479,7 +478,6 @@ export default function EmployeeLesson() {
               disabled={currentLessonIndex === lessons.length - 1}
             >
               Next
-              <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
 
             {videoMaterial && (
