@@ -16,7 +16,7 @@ export default function EmployeeLayout() {
           <div className="flex gap-2 rounded-full bg-[#EEF2F5] p-1">
             
             <NavLink
-              to="/employee"
+              to="/employee/dashboard"
               end
               className={({ isActive }) =>
                 `rounded-full px-[22px] py-2 text-sm font-semibold ${

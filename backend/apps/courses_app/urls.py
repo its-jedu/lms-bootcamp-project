@@ -70,6 +70,5 @@ urlpatterns = [
     
     # To keep the same style as "/admin/dashboard/" for admin routing
     path("admin/course-assignments/", course_assignments, name="course-assignments"),
-    # MUST be moved to admin_app
     path("employee/assigned-courses/", employee_assigned_courses, name="employee-assigned-courses"), 
 ]

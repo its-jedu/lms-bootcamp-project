@@ -1,125 +1,504 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { 
+  ArrowLeft, 
+  Play, 
+  CheckCircle2, 
+  Circle, 
+  ChevronRight,
+  FileText,
+  FileDown,
+  Headphones,
+  BookOpen,
+} from "lucide-react";
+import cachedApi from "../../api/cachedApi";
+import { Button } from "@/components/ui/button";
 
-const lessons = [
-  { id: 1, title: "Introduction to safety", status: "done" },
-  { id: 2, title: "Hazard types", status: "done" },
-  { id: 3, title: "Emergency procedures", status: "active" },
-  { id: 4, title: "PPE guidelines", status: "todo" },
-  { id: 5, title: "Reporting incidents", status: "todo" },
-  { id: 6, title: "Review & summary", status: "todo" },
-];
+function getYouTubeThumbnail(url) {
+  if (!url) return null;
+  
+  let videoId = null;
+  
+  if (url.includes("youtube.com/watch")) {
+    const urlParams = new URLSearchParams(url.split("?")[1]);
+    videoId = urlParams.get("v");
+  } else if (url.includes("youtu.be/")) {
+    videoId = url.split("youtu.be/")[1]?.split("?")[0];
+  } else if (url.includes("youtube.com/embed/")) {
+    videoId = url.split("youtube.com/embed/")[1]?.split("?")[0];
+  }
+  
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  }
+  
+  return null;
+}
 
-const LessonIcon = ({ status }) => {
-  const base =
-    "w-6 h-6 rounded-full border flex items-center justify-center flex-shrink-0 text-xs";
+export default function EmployeeLesson() {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  
+  const [course, setCourse] = useState(null);
+  const [lessons, setLessons] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [selectedLesson, setSelectedLesson] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [lessonStatuses, setLessonStatuses] = useState({});
 
-  if (status === "done")
+  useEffect(() => {
+    (async () => {
+      try {
+        const courseResponse = await cachedApi.get(`api/courses/${courseId}/`, {
+          ttl: 10 * 60 * 1000,
+          cacheKey: `course_${courseId}`,
+        });
+        
+        const lessonsResponse = await cachedApi.get(`api/courses/${courseId}/lessons/`, {
+          ttl: 10 * 60 * 1000,
+          cacheKey: `course_lessons_${courseId}`,
+        });
+        
+        setCourse(courseResponse.data);
+        setLessons(lessonsResponse.data);
+        
+        const initialStatuses = {};
+        lessonsResponse.data.forEach(lesson => {
+          initialStatuses[lesson.id] = "not_started";
+        });
+        setLessonStatuses(initialStatuses);
+        
+        if (lessonsResponse.data.length > 0) {
+          setSelectedLesson(lessonsResponse.data[0]);
+        }
+        
+      } catch (error) {
+        console.error("Failed to fetch course data:", error);
+      } finally {
+        setTimeout(() => {
+          setLoading(false);
+        }, 1500);
+      }
+    })();
+  }, [courseId]);
+
+  useEffect(() => {
+    if (selectedLesson) {
+      setIsPlaying(false);
+      (async () => {
+        try {
+          const materialsResponse = await cachedApi.get(
+            `api/lessons/${selectedLesson.id}/materials/`,
+            {
+              ttl: 10 * 60 * 1000,
+              cacheKey: `lesson_materials_${selectedLesson.id}`,
+            }
+          );
+          setMaterials(materialsResponse.data);
+          console.log("Materials for lesson", selectedLesson.id, materialsResponse.data);
+        } catch (error) {
+          console.error("Failed to fetch materials:", error);
+          setMaterials([]);
+        }
+      })();
+    }
+  }, [selectedLesson]);
+
+  const completedLessons = Object.values(lessonStatuses).filter(
+    status => status === "completed"
+  ).length;
+  
+  const courseProgress = lessons.length > 0 
+    ? Math.round((completedLessons / lessons.length) * 100) 
+    : 0;
+
+  const currentLessonIndex = lessons.findIndex(l => l.id === selectedLesson?.id);
+  const currentLessonStatus = selectedLesson ? lessonStatuses[selectedLesson.id] : "not_started";
+
+  const handleLessonSelect = (lesson) => {
+    setSelectedLesson(lesson);
+  };
+
+  const handleMarkComplete = () => {
+    if (!selectedLesson) return;
+    
+    setLessonStatuses(prev => ({
+      ...prev,
+      [selectedLesson.id]: prev[selectedLesson.id] === "completed" ? "in_progress" : "completed"
+    }));
+  };
+
+  const handleNext = () => {
+    if (currentLessonIndex < lessons.length - 1) {
+      const nextLesson = lessons[currentLessonIndex + 1];
+      
+      if (lessonStatuses[selectedLesson.id] !== "completed") {
+        setLessonStatuses(prev => ({
+          ...prev,
+          [selectedLesson.id]: "in_progress"
+        }));
+      }
+      
+      setSelectedLesson(nextLesson);
+    }
+  };
+
+  const handleStartLesson = () => {
+    if (selectedLesson) {
+      setLessonStatuses(prev => ({
+        ...prev,
+        [selectedLesson.id]: "in_progress"
+      }));
+      setIsPlaying(true);
+    }
+  };
+
+  const getLessonType = (materials) => {
+    const types = materials.map(m => m.material_type);
+    if (types.includes("video")) return "Video";
+    if (types.includes("audio")) return "Audio";
+    if (types.includes("pdf")) return "PDF";
+    if (types.includes("text")) return "Reading";
+    return "";
+  };
+
+  const getLessonDuration = (materials) => {
+    const hasVideo = materials.some(m => m.material_type === "video" && m.video_url);
+    const hasAudio = materials.some(m => m.material_type === "audio" && m.file);
+    if (hasVideo) return "8 minutes";
+    if (hasAudio) return "5 minutes";
+    return "";
+  };
+
+  const getVideoMaterial = () => {
+    return materials.find(m => m.material_type === "video" && m.video_url);
+  };
+
+  const getPdfMaterials = () => {
+    return materials.filter(m => m.material_type === "pdf" && m.file);
+  };
+
+  const getAudioMaterials = () => {
+    return materials.filter(m => m.material_type === "audio" && m.file);
+  };
+
+  const getTextMaterial = () => {
+    return materials.find(m => m.material_type === "text" && m.text_content);
+  };
+
+  const formatDescription = (text) => {
+    if (!text) return "";
+    const doc = new DOMParser().parseFromString(text, "text/html");
+    return doc.body.textContent || "";
+  };
+
+  if (loading) {
     return (
-      <div className={`${base} bg-[#1F4842] border-[#1F4842] text-white`}>
-        ✓
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="flex items-center justify-center min-h-[400px]"
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-[#1F4842] border-t-transparent rounded-full"
+        />
+      </motion.div>
+    );
+  }
+
+  if (!course || !selectedLesson) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-[#1F4842] font-semibold">Course not found</p>
       </div>
     );
-  if (status === "active")
-    return (
-      <div className={`${base} bg-[#1F4842] border-[#1F4842] text-white`}>
-        ▷
-      </div>
-    );
-  return (
-    <div className={`${base} border-[#c8ddd9] text-gray-400`}>☰</div>
-  );
-};
+  }
 
-export default function CourseLessonPage() {
+  const lessonType = getLessonType(materials);
+  const lessonDuration = getLessonDuration(materials);
+  const videoMaterial = getVideoMaterial();
+  const pdfMaterials = getPdfMaterials();
+  const audioMaterials = getAudioMaterials();
+  const textMaterial = getTextMaterial();
+  const hasStarted = currentLessonStatus === "in_progress" || currentLessonStatus === "completed";
+  const thumbnailUrl = videoMaterial ? getYouTubeThumbnail(videoMaterial.video_url) : null;
+  const hasContent = materials.length > 0;
+
   return (
-    <div className="flex min-h-[580px] rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 font-sans">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1.7, ease: "easeOut" }}
+      className="flex min-h-[580px] overflow-hidden rounded-2xl border border-gray-200 bg-white font-sans"
+    >
       {/* Sidebar */}
-      <div className="w-60 min-w-[240px] bg-white border-r border-gray-200 flex flex-col py-4">
-        {/* Back */}
-        <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-4 pb-3 text-left">
-          ‹ Back
+      <div className="flex w-72 min-w-[288px] flex-col border-r border-gray-200 bg-white py-4">
+        <button 
+          onClick={() => navigate("/employee/courses")}
+          className="px-4 pb-3 text-left text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1.5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
         </button>
 
-        {/* Thumbnail */}
-        <div className="mx-4 mb-3 h-24 rounded-xl bg-[#cce8e2]" />
-
-        {/* Course info */}
-        <p className="px-4 text-sm font-medium text-gray-800">
-          Workplace Safety
-        </p>
-        <p className="px-4 text-xs text-gray-500 mt-0.5 mb-2">
-          6 Lessons · 38%
-        </p>
-
-        {/* Progress bar */}
-        <div className="mx-4 mb-4 h-1.5 rounded-full bg-[#d6eee8] overflow-hidden">
-          <div className="h-full w-[38%] rounded-full bg-[#1F4842]" />
+        <div className="mx-4 mb-3 h-24 rounded-xl bg-[#cce8e2] flex items-center justify-center">
+          <BookOpen className="w-8 h-8 text-[#1F4842]" />
         </div>
 
-        {/* Lesson list */}
-        <div className="flex flex-col gap-0.5 px-2">
+        <p className="px-4 text-sm font-medium text-gray-800">
+          {course.title}
+        </p>
+
+        <p className="mt-0.5 mb-2 px-4 text-xs text-gray-500">
+          {lessons.length} Lessons · {courseProgress}%
+        </p>
+
+        <div className="mx-4 mb-4 h-1.5 overflow-hidden rounded-full bg-[#d6eee8]">
+          <div 
+            className="h-full rounded-full bg-[#1F4842] transition-all duration-500"
+            style={{ width: `${courseProgress}%` }}
+          />
+        </div>
+
+        <div className="flex flex-col gap-0.5 px-2 overflow-y-auto">
           {lessons.map((lesson) => (
             <div
               key={lesson.id}
-              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer text-sm transition-colors ${
-                lesson.status === "active"
+              onClick={() => handleLessonSelect(lesson)}
+              className={`cursor-pointer rounded-xl px-2.5 py-2.5 text-sm transition-colors flex items-center gap-2.5 ${
+                selectedLesson?.id === lesson.id
                   ? "bg-[#e6f4f0] text-[#1F4842] font-medium"
                   : "text-gray-500 hover:bg-gray-50"
               }`}
             >
-              <LessonIcon status={lesson.status} />
-              <span>{lesson.title}</span>
+              {lessonStatuses[lesson.id] === "completed" ? (
+                <CheckCircle2 className="w-5 h-5 text-[#1F4842] flex-shrink-0" />
+              ) : selectedLesson?.id === lesson.id ? (
+                <div className="w-5 h-5 rounded-full bg-[#1F4842] flex items-center justify-center flex-shrink-0">
+                  <Play className="w-3 h-3 text-white ml-0.5" />
+                </div>
+              ) : (
+                <Circle className="w-5 h-5 text-gray-300 flex-shrink-0" />
+              )}
+              <span className="line-clamp-1 text-sm">{lesson.title}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 bg-white flex flex-col gap-3.5 p-6">
+      <div className="flex flex-1 flex-col bg-white p-6 overflow-y-auto">
         {/* Lesson header */}
-        <div>
-          <h2 className="text-xl font-medium text-gray-900">
-            Emergency procedures
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {selectedLesson.title}
           </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Lesson 3 of 6 · Video · 8 minutes
+
+          <p className="mt-1 text-sm text-gray-500">
+            Lesson {currentLessonIndex + 1} of {lessons.length}
+            {lessonType && (
+              <>
+                <span className="mx-1.5">·</span>
+                {lessonType}
+              </>
+            )}
+            {lessonDuration && (
+              <>
+                <span className="mx-1.5">·</span>
+                {lessonDuration}
+              </>
+            )}
           </p>
         </div>
 
-        {/* Video placeholder */}
-        <div className="h-[280px] rounded-2xl bg-[#cce8e2] flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-white/70 flex items-center justify-center cursor-pointer">
-            <span className="text-[#1F4842] text-xl ml-0.5">▷</span>
-          </div>
+        {/* Content Area */}
+        <div className="mb-4 space-y-4">
+          {/* VIDEO - Only show if there's an actual video URL */}
+          {videoMaterial && (
+            isPlaying ? (
+              <div>
+                {videoMaterial.video_url.includes("youtube.com") ||
+                videoMaterial.video_url.includes("youtu.be") ? (
+                  <iframe
+                    width="100%"
+                    height="400"
+                    className="rounded-xl"
+                    src={`${videoMaterial.video_url
+                      .replace("watch?v=", "embed/")
+                      .replace("youtu.be/", "youtube.com/embed/")}?autoplay=1`}
+                    title="Lesson Video"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <video
+                    controls
+                    autoPlay
+                    className="w-full rounded-xl"
+                    style={{ maxHeight: "400px" }}
+                  >
+                    <source src={videoMaterial.video_url} />
+                    Your browser does not support the video element.
+                  </video>
+                )}
+              </div>
+            ) : (
+              <div 
+                className="relative h-[280px] rounded-2xl overflow-hidden cursor-pointer" 
+                onClick={handleStartLesson}
+              >
+                {thumbnailUrl ? (
+                  <img 
+                    src={thumbnailUrl} 
+                    alt={selectedLesson.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-[#cce8e2]" />
+                )}
+                
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg hover:bg-white hover:scale-105 transition-all">
+                    <Play className="w-6 h-6 text-[#1F4842] ml-0.5" />
+                  </div>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* PDF */}
+          {pdfMaterials.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700">Download Materials</p>
+              {pdfMaterials.map((material) => (
+                <div 
+                  key={material.id}
+                  className="flex items-center justify-between p-4 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-8 h-8 text-[#1F4842]" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">
+                        {material.filename || "Lesson Material"}
+                      </p>
+                      <p className="text-xs text-gray-500">PDF Document</p>
+                    </div>
+                  </div>
+                  <a
+                    href={material.file}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1F4842] text-white text-sm hover:bg-[#17352e] transition-colors"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    Download
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* AUDIO */}
+          {audioMaterials.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700">Audio Materials</p>
+              {audioMaterials.map((material) => (
+                <div 
+                  key={material.id}
+                  className="p-4 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <Headphones className="w-8 h-8 text-[#1F4842]" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">
+                        {material.filename || "Audio Material"}
+                      </p>
+                      <p className="text-xs text-gray-500">Audio</p>
+                    </div>
+                  </div>
+                  <audio controls className="w-full">
+                    <source src={material.file} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* TEXT */}
+          {textMaterial && (
+            <div className="p-6 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]">
+              <div className="flex items-center gap-3 mb-4">
+                <FileText className="w-8 h-8 text-[#1F4842]" />
+                <p className="text-sm font-medium text-gray-800">Lesson Content</p>
+              </div>
+              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {textMaterial.text_content}
+              </div>
+            </div>
+          )}
+
+          {/* No content */}
+          {!hasContent && (
+            <div className="flex h-[280px] items-center justify-center rounded-2xl bg-[#cce8e2]">
+              <p className="text-[#1F4842] text-sm">No content available for this lesson</p>
+            </div>
+          )}
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2.5">
-          <button className="bg-[#e8f5f0] text-[#1F4842] border border-[#a8d5c7] rounded-xl px-4 py-2 text-sm font-medium hover:bg-[#d4eee5] transition-colors">
-            Mark as Completed
-          </button>
-          <button className="bg-white border border-gray-300 text-gray-800 rounded-xl px-5 py-2 text-sm hover:bg-gray-50 transition-colors">
-            Next
-          </button>
-          <button className="ml-auto bg-[#1F4842] text-white rounded-xl px-5 py-2 text-sm font-medium flex items-center gap-1.5 hover:bg-[#17352e] transition-colors">
-            ▷ Resume
-          </button>
+        <div className="flex items-center gap-2.5 mb-4 mt-auto">
+          <Button
+            variant="outline"
+            className={`border-[#a8d5c7] bg-[#e8f5f0] text-[#1F4842] hover:bg-[#d4eee5] ${
+              currentLessonStatus === "completed" ? "opacity-70" : ""
+            }`}
+            onClick={handleMarkComplete}
+          >
+            {currentLessonStatus === "completed" ? "Completed" : "Mark as Completed"}
+          </Button>
+
+          <div className="ml-auto flex items-center gap-2.5">
+            <Button
+              variant="outline"
+              className="border-gray-300 bg-white text-gray-800 hover:bg-gray-50"
+              onClick={handleNext}
+              disabled={currentLessonIndex === lessons.length - 1}
+            >
+              Next
+            </Button>
+
+            {videoMaterial && (
+              <Button
+                className="bg-[#1F4842] text-white hover:bg-[#17352e]"
+                onClick={handleStartLesson}
+              >
+                <Play className="w-4 h-4 mr-1.5" />
+                {hasStarted ? "Resume" : "Start"}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Course description */}
-        <div>
-          <h3 className="text-base font-medium text-gray-900 mb-1.5">
-            Project Management
-          </h3>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            A project management course equips professionals with essential
-            skills to plan, execute, and close projects successfully. A project
-            management course equips professionals with essential skills to
-            plan, execute, and deliver results on time and within budget,
-            ensuring teams stay aligned throughout the process.
-          </p>
-        </div>
+        {selectedLesson.objective && (
+          <div>
+            <h3 className="mb-1.5 text-base font-medium text-gray-900">
+              {course.title}
+            </h3>
+
+            <p className="text-sm leading-relaxed text-gray-500">
+              {formatDescription(selectedLesson.objective)}
+            </p>
+          </div>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -6,7 +6,7 @@ import {
   Outlet,
   Navigate,
 } from "react-router-dom";
-
+import { useState } from "react";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -24,11 +24,13 @@ import EmployeeLayout from "./pages/employee/EmployeeLayout";
 import EmployeeCourses from "./pages/employee/EmployeeCourses";
 import EmployeeOverview from "./pages/employee/EmployeeOverview";
 import { courseData } from "./pages/employee/courseData.js";
+import EmployeeLesson from "./pages/employee/EmployeeLesson";
 
 // Layouts & Error
 import AdminLayout from "./layout/AdminLayout";
 
 function App() {
+  const [courses, setCourses] = useState([...courseData]);
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route path="/" element={<><Outlet /></>} errorElement={<ErrorBoundary />}>
@@ -63,8 +65,13 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<EmployeeOverview courseData={courseData} />} />
-          <Route path="courses" element={<EmployeeCourses courseData={courseData} />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<EmployeeOverview courseData={courses} setCourseData={setCourses} />} />
+          <Route path="courses" element={<><Outlet /></>} >
+            <Route index element={<EmployeeCourses courseData={courses} setCourseData={setCourses} />} />
+            <Route path=":courseId" element={<EmployeeLesson courseData={courses} setCourseData={setCourses} />} />
+          </Route>
+          
         </Route>
 
       </Route>
