@@ -44,7 +44,7 @@ class MaterialViewSet(viewsets.ViewSet):
             raise PermissionDenied("You do not have permission to view materials for this lesson.")
         
         materials = lesson.materials.all()
-        serializer = MaterialSerializer(materials, many=True)
+        serializer = MaterialSerializer(materials, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def create_file(self, request, lesson_id=None):
@@ -77,7 +77,7 @@ class MaterialViewSet(viewsets.ViewSet):
                             status=status.HTTP_409_CONFLICT)
 
         return Response(
-            MaterialSerializer(material).data, 
+            MaterialSerializer(material, context={'request': request}).data, 
             status=status.HTTP_201_CREATED)
     
     def create_text(self, request, lesson_id=None): 
@@ -94,7 +94,7 @@ class MaterialViewSet(viewsets.ViewSet):
             text_content=serializer.validated_data["text_content"],
         )
 
-        return Response(MaterialSerializer(material).data, status=status.HTTP_201_CREATED)
+        return Response(MaterialSerializer(material, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
     def create_video(self, request, lesson_id=None): 
         lesson = get_object_or_404(Lesson, id=lesson_id)
@@ -110,7 +110,7 @@ class MaterialViewSet(viewsets.ViewSet):
             video_url=serializer.validated_data["video_url"],
         )
 
-        return Response(MaterialSerializer(material).data, status=status.HTTP_201_CREATED)
+        return Response(MaterialSerializer(material, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, lesson_id=None, pk=None):
         lesson = get_object_or_404(Lesson, id=lesson_id)
