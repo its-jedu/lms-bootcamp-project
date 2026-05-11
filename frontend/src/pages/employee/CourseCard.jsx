@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Play, RotateCcw, Eye } from "lucide-react";
 
 export default function CourseCard({ course }) {
   const navigate = useNavigate();
@@ -52,10 +53,25 @@ export default function CourseCard({ course }) {
       </div>
 
       <button
-        className="w-full rounded-full bg-[#D8F3CA] py-2.5 text-xs text-[#006064] font-medium hover:bg-[#c5e6b8] transition-colors"
+        className="w-full rounded-full bg-[#D8F3CA] py-2.5 text-xs text-[#006064] font-medium hover:bg-[#c5e6b8] transition-colors flex items-center justify-center gap-1.5"
         onClick={() => navigate(`../courses/${course.id}`)}
       >
-        {isNotStarted ? "Start" : isCompleted ? "Review" : "Resume"}
+        {isNotStarted ? (
+          <>
+            {/* <Play className="w-3.5 h-3.5" /> */}
+            <span>Start</span>
+          </>
+        ) : isCompleted ? (
+          <>
+            {/* <Eye className="w-3.5 h-3.5" /> */}
+            <span>Review</span>
+          </>
+        ) : (
+          <>
+            {/* <RotateCcw className="w-3.5 h-3.5" /> */}
+            <span>Resume</span>
+          </>
+        )}
       </button>
     </div>
   );
