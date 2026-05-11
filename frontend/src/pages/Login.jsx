@@ -19,12 +19,24 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const data = await login(formdata);
-    const role = data?.user?.role;
-    if (role === "admin") {
-      navigate("/admin");
-    } else if (role === "employee") {
-      navigate("/employee");
+
+    /* 
+     Catches the state where credentials are wrong
+     It throws an error and resets setLoading 
+    */
+
+    try{
+      const data = await login(formdata);
+      const role = data?.user?.role;
+      if (role === "admin") {
+        navigate("/admin");
+      } else if (role === "employee") {
+        navigate("/employee");
+      }
+    } catch(error){
+      alert("Wrong credentials");
+    }finally{
+      setLoading(false);
     }
   };
 

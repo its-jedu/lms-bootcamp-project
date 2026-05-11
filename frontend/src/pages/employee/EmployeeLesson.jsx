@@ -13,6 +13,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import cachedApi from "../../api/cachedApi";
+import env from "../../config/env";
 import { Button } from "@/components/ui/button";
 
 function getYouTubeThumbnail(url) {
@@ -34,6 +35,12 @@ function getYouTubeThumbnail(url) {
   }
   
   return null;
+}
+
+function getFullUrl(path) {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  return `${env.API_URL}${path}`;
 }
 
 export default function EmployeeLesson() {
@@ -97,7 +104,6 @@ export default function EmployeeLesson() {
             }
           );
           setMaterials(materialsResponse.data);
-          console.log("Materials for lesson", selectedLesson.id, materialsResponse.data);
         } catch (error) {
           console.error("Failed to fetch materials:", error);
           setMaterials([]);
@@ -343,7 +349,7 @@ export default function EmployeeLesson() {
                     className="w-full rounded-xl"
                     style={{ maxHeight: "400px" }}
                   >
-                    <source src={videoMaterial.video_url} />
+                    <source src={getFullUrl(videoMaterial.video_url)} />
                     Your browser does not support the video element.
                   </video>
                 )}
@@ -391,7 +397,7 @@ export default function EmployeeLesson() {
                     </div>
                   </div>
                   <a
-                    href={material.file}
+                    href={getFullUrl(material.file)}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1F4842] text-white text-sm hover:bg-[#17352e] transition-colors"
@@ -423,7 +429,7 @@ export default function EmployeeLesson() {
                     </div>
                   </div>
                   <audio controls className="w-full">
-                    <source src={material.file} type="audio/mpeg" />
+                    <source src={getFullUrl(material.file)} type="audio/mpeg" />
                     Your browser does not support the audio element.
                   </audio>
                 </div>
@@ -461,6 +467,7 @@ export default function EmployeeLesson() {
             }`}
             onClick={handleMarkComplete}
           >
+            <CheckCircle2 className="w-4 h-4 mr-1.5" />
             {currentLessonStatus === "completed" ? "Completed" : "Mark as Completed"}
           </Button>
 
@@ -472,6 +479,7 @@ export default function EmployeeLesson() {
               disabled={currentLessonIndex === lessons.length - 1}
             >
               Next
+              <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
 
             {videoMaterial && (
