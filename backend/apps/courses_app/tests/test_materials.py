@@ -173,7 +173,7 @@ class MaterialAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertEqual(Material.objects.count(), 0)
 
-    def test_admin_can_create_video_material(self):
+    def test_admin_can_create_video_material_youtube(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
         response = self.client.post(
             f"/api/lessons/{self.lesson.id}/materials/video/",
@@ -185,6 +185,20 @@ class MaterialAPITests(TestCase):
         self.assertEqual(Material.objects.count(), 1)
         self.assertEqual(response.data["material_type"], "video")
         self.assertIn("youtube.com", response.data["video_url"])
+        self.assertIn("abc123", response.data["video_url"])
+
+    def test_admin_can_create_video_material_vimeo(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        response = self.client.post(
+            f"/api/lessons/{self.lesson.id}/materials/video/",
+            {"video_url": "https://www.vimeo.com/watch?v=abc123"},
+            format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Material.objects.count(), 1)
+        self.assertEqual(response.data["material_type"], "video")
+        self.assertIn("vimeo.com", response.data["video_url"])
         self.assertIn("abc123", response.data["video_url"])
 
     def test_admin_cannot_create_video_material_with_unsupported_provider(self):

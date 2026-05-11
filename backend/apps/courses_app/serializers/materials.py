@@ -17,6 +17,8 @@ ALLOWED_VIDEO_HOSTS = {
     "youtube.com",
     "www.youtube.com",
     "youtu.be",
+    "www.vimeo.com",
+    "vimeo.com",
 }
 
 class MaterialSerializer(serializers.ModelSerializer):
