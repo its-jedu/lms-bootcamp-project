@@ -17,15 +17,23 @@ ALLOWED_VIDEO_HOSTS = {
     "youtube.com",
     "www.youtube.com",
     "youtu.be",
-    "www.vimeo.com",
-    "vimeo.com",
 }
 
 class MaterialSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+    
     class Meta:
         model = Material
         fields = ["id", "lesson", "material_type", "file", "filename", "text_content", "video_url", "uploaded_at"]    
         read_only_fields = ["id", "lesson", "filename", "uploaded_at"]
+    
+    def get_file(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            return obj.file.url
+        return None
         
 class FileMaterialUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
@@ -41,7 +49,6 @@ class FileMaterialUploadSerializer(serializers.Serializer):
             raise serializers.ValidationError("Unsupported file type. Only PDF and certain audio files are allowed")
 
         return file
-    
 
 class TextMeterialSerializer(serializers.Serializer):
     text_content = serializers.CharField()
