@@ -226,6 +226,9 @@ class MaterialAPITests(TestCase):
         self.assertEqual(len(response.data), 1)
 
     def test_assigned_employee_can_list_materials_for_lesson(self):
+        self.course.status = "published"
+        self.course.save(update_fields=["status"])
+
         Material.objects.create(
             lesson=self.lesson,
             material_type="text",
@@ -239,6 +242,9 @@ class MaterialAPITests(TestCase):
         self.assertEqual(len(response.data), 1)
 
     def test_unassigned_employee_cannot_list_materials_for_lesson(self):
+        self.course.status = "published"
+        self.course.save(update_fields=["status"])
+
         Material.objects.create(
             lesson=self.lesson,
             material_type="text",
@@ -246,6 +252,18 @@ class MaterialAPITests(TestCase):
         )
 
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.other_employee_token}")
+        response = self.client.get(f"/api/lessons/{self.lesson.id}/materials/")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_assigned_employee_cannot_list_materials_for_draft_course(self):
+        Material.objects.create(
+            lesson=self.lesson,
+            material_type="text",
+            text_content="Draft material"
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
         response = self.client.get(f"/api/lessons/{self.lesson.id}/materials/")
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -300,6 +318,48 @@ class MaterialAPITests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Material.objects.count(), 0)
+
+    def test_admin_cannot_mutate_published_course_materials(self):
+        self.course.status = "published"
+        self.course.save(update_fields=["status"])
+
+        material = Material.objects.create(
+            lesson=self.lesson,
+            material_type="text",
+            text_content="Locked material"
+        )
+        pdf_file = SimpleUploadedFile(
+            "locked.pdf",
+            b"%PDF-1.4 test content",
+            content_type="application/pdf"
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+
+        file_response = self.client.post(
+            f"/api/lessons/{self.lesson.id}/materials/file/",
+            {"file": pdf_file},
+            format="multipart"
+        )
+        text_response = self.client.post(
+            f"/api/lessons/{self.lesson.id}/materials/text/",
+            {"text_content": "Should not be created"},
+            format="json"
+        )
+        video_response = self.client.post(
+            f"/api/lessons/{self.lesson.id}/materials/video/",
+            {"video_url": "https://www.youtube.com/watch?v=abc123"},
+            format="json"
+        )
+        delete_response = self.client.delete(
+            f"/api/lessons/{self.lesson.id}/materials/{material.id}/"
+        )
+
+        self.assertEqual(file_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(text_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(video_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(delete_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(Material.objects.count(), 1)
 
     def test_employee_cannot_delete_material(self):
         material = Material.objects.create(

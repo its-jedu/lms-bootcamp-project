@@ -30,12 +30,23 @@ class MaterialViewSet(viewsets.ViewSet):
             return True
 
         if getattr(user, "role", None) == "employee":
+            if lesson.course.status != "published":
+                return False
+            
             return CourseAssignment.objects.filter(
                 employee = user,
                 course_id = lesson.course_id,
                 is_active = True
             ).exists()
         return False
+    
+    def _ensure_draft_course(self, course):
+        if course.status == "published":
+            return Response(
+                {"error": "Published courses are view only."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return None
     
     def list(self, request, lesson_id=None):
         lesson = get_object_or_404(Lesson, id=lesson_id)
@@ -49,6 +60,11 @@ class MaterialViewSet(viewsets.ViewSet):
     
     def create_file(self, request, lesson_id=None):
         lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        locked_response = self._ensure_draft_course(lesson.course)
+        if locked_response:
+            return locked_response
+        
         serializer = FileMaterialUploadSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -82,6 +98,11 @@ class MaterialViewSet(viewsets.ViewSet):
     
     def create_text(self, request, lesson_id=None): 
         lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        locked_response = self._ensure_draft_course(lesson.course)
+        if locked_response:
+            return locked_response
+        
         serializer = TextMeterialSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -98,6 +119,11 @@ class MaterialViewSet(viewsets.ViewSet):
 
     def create_video(self, request, lesson_id=None): 
         lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        locked_response = self._ensure_draft_course(lesson.course)
+        if locked_response:
+            return locked_response
+        
         serializer = VideoMeterialSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -114,6 +140,11 @@ class MaterialViewSet(viewsets.ViewSet):
 
     def destroy(self, request, lesson_id=None, pk=None):
         lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        locked_response = self._ensure_draft_course(lesson.course)
+        if locked_response:
+            return locked_response
+        
         material = get_object_or_404(Material, id=pk, lesson=lesson)
 
         if material.file:
