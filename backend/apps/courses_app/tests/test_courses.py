@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.auth_app.models import User
-from apps.courses_app.models import Course
+from apps.courses_app.models import Course, Lesson, Material
 
 class CourseAPITests(TestCase):
     def setUp(self):
@@ -37,6 +37,19 @@ class CourseAPITests(TestCase):
             title="Draft Course",
             description="Draft",
             status="draft",
+        )
+
+        lesson = Lesson.objects.create(
+            course=draft_course,
+            title="Intro Lesson",
+            objective="Intro objective",
+            order=1,
+        )
+
+        Material.objects.create(
+            lesson=lesson,
+            material_type="text",
+            text_content="Intro content",
         )
 
         response = self.client.patch(
@@ -127,6 +140,51 @@ class CourseAPITests(TestCase):
         self.course.refresh_from_db()
         self.assertEqual(self.course.title, "Test Course")
         self.assertEqual(self.course.description, "Course for lesson tests")
+    
+    def test_admin_cannot_publish_course_without_lessons(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+
+        draft_course = Course.objects.create(
+            title="Empty Draft Course",
+            description="No lessons yet",
+            status="draft",
+        )
+
+        response = self.client.patch(
+            f"/api/courses/{draft_course.id}/publish/",
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        draft_course.refresh_from_db()
+        self.assertEqual(draft_course.status, "draft")
+
+    def test_admin_cannot_publish_course_without_learning_content(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Draft",
+            status="draft",
+        )
+
+        Lesson.objects.create(
+            course=draft_course,
+            title="Intro Lesson",
+            objective="Intro objective",
+            order=1,
+        )
+
+        response = self.client.patch(
+            f"/api/courses/{draft_course.id}/publish/",
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        draft_course.refresh_from_db()
+        self.assertEqual(draft_course.status, "draft")
 
     def test_admin_can_delete_draft_course(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
