@@ -17,23 +17,56 @@ ALLOWED_VIDEO_HOSTS = {
     "youtube.com",
     "www.youtube.com",
     "youtu.be",
+    "www.vimeo.com",
+    "vimeo.com"
 }
 
 class MaterialSerializer(serializers.ModelSerializer):
-    file = serializers.SerializerMethodField()
+    #file = serializers.SerializerMethodField()
     
     class Meta:
         model = Material
-        fields = ["id", "lesson", "material_type", "file", "filename", "text_content", "video_url", "uploaded_at"]    
+        fields = ["id", "lesson", "material_type", "filename", "storage_provider", "provider_file_id", "provider_path", "text_content", "video_url", "uploaded_at"]    
         read_only_fields = ["id", "lesson", "filename", "uploaded_at"]
     
-    def get_file(self, obj):
-        if obj.file:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.file.url)
-            return obj.file.url
-        return None
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        material_type = data.get("material_type")
+
+        base_fields = {
+            "id",
+            "lesson",
+            "material_type",
+            "uploaded_at",
+        }
+
+        if material_type in ["pdf", "audio"]:
+            allowed_fields = base_fields | {
+                "filename",
+                "storage_provider",
+                "provider_file_id",
+                "provider_path",
+            }
+
+        elif material_type == "text":
+            allowed_fields = base_fields | {
+                "text_content",
+            }
+
+        elif material_type == "video":
+            allowed_fields = base_fields | {
+                "video_url",
+            }
+
+        else:
+            allowed_fields = base_fields
+
+        return {
+            key: value
+            for key, value in data.items()
+            if key in allowed_fields
+        }
         
 class FileMaterialUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
