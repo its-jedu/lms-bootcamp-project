@@ -40,7 +40,7 @@ export default function EmployeeLayout() {
                 `rounded-full px-[22px] py-2 text-sm font-semibold ${
                   isActive
                     ? "bg-[#1F4842] text-white"
-                    : "bg-[#D8F3CA] text-[#212429]"
+                    : "bg-[#b9f27c] text-[#1f4845]"
                 }`
               }
             >
@@ -53,7 +53,7 @@ export default function EmployeeLayout() {
                 `rounded-full px-[22px] py-2 text-sm font-semibold ${
                   isActive
                     ? "bg-[#1F4842] text-white"
-                    : "bg-[#D8F3CA] text-[#212429]"
+                    : "bg-[#b9f27c] text-[#1f4845]"
                 }`
               }
             >
