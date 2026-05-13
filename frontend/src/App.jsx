@@ -12,12 +12,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 // Admin pages
-import AdminDashboard from "./pages/AdminDashboard";
-import CreateCourse from "./pages/CreateCourse";
-import ManageEmployees from "./pages/ManageEmployees";
-import AssignCourse from "./pages/AssignCourse";
-import TrackProgress from "./pages/TrackProgress";
-import Analytics from "./pages/Analytics";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import CreateCourse from "./pages/admin/CreateCourse";
+import ManageEmployees from "./pages/admin/ManageEmployees";
+import AssignCourse from "./pages/admin/AssignCourse";
+import TrackProgress from "./pages/admin/TrackProgress";
+import Analytics from "./pages/admin/Analytics";
 
 // Employee
 import EmployeeLayout from "./pages/employee/EmployeeLayout";

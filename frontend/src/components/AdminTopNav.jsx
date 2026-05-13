@@ -54,7 +54,7 @@ export default function AdminTopNav() {
         <div className="flex">
           <div className="bg-white">
             <span className="text-lg font-semibold text-gray-800">
-              <span className="font-bold">Skill</span>minds
+              <img src="./public/Dark-variation-logo.png" alt="Skillminds Logo" className="h-10 w-100%" />
             </span>
           </div>
         </div>
