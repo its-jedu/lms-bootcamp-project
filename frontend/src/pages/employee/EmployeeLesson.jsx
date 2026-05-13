@@ -42,8 +42,93 @@ function getFullUrl(path) {
   if (path.startsWith("http")) return path;
   return `${env.API_URL}${path}`;
 }
+// START PDF
+const getMaterialDownloadUrl = (material) => {
+  if (!material?.lesson || !material?.id) return "";
+  return `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`;
+};
 
+const getAccessToken = () => {
+  return localStorage.getItem("access_token");
+};
+
+const fetchProtectedBlobUrl = async (material) => {
+  const token = getAccessToken();
+
+  const response = await fetch(getMaterialDownloadUrl(material), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch material: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+};
+
+const handleProtectedDownload = async (material) => {
+  try {
+    const token = localStorage.getItem("access_token");
+
+    const response = await fetch(
+      `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get download URL: ${response.status}`);
+    }
+
+    const data = await response.json();
+    window.location.href = data.download_url;
+  } catch (error) {
+    console.error(error);
+    alert("Unable to download file.");
+  }
+};
+
+// FINISH PDF
 export default function EmployeeLesson() {
+  const [audioSrcMap, setAudioSrcMap] = useState({});
+  // START AUDIO 
+  const loadAudioSource = async (material) => {
+    try {
+      if (audioSrcMap[material.id]) return;
+
+      const token = localStorage.getItem("access_token");
+
+      const response = await fetch(getMaterialDownloadUrl(material), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const rawText = await response.text();
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio link: ${response.status}`);
+      }
+
+      const data = JSON.parse(rawText);
+
+      setAudioSrcMap((prev) => ({
+        ...prev,
+        [material.id]: data.download_url,
+      }));
+    } catch (error) {
+      console.error("audio load error:", error);
+      alert("Unable to load audio.");
+    }
+  };
+  // FINISH AUDIO
+
   const { courseId } = useParams();
   const navigate = useNavigate();
   
@@ -183,11 +268,11 @@ export default function EmployeeLesson() {
   };
 
   const getPdfMaterials = () => {
-    return materials.filter(m => m.material_type === "pdf" && m.file);
+    return materials.filter(m => m.material_type === "pdf" && m.filename);
   };
 
   const getAudioMaterials = () => {
-    return materials.filter(m => m.material_type === "audio" && m.file);
+    return materials.filter(m => m.material_type === "audio" && m.filename);
   };
 
   const getTextMaterial = () => {
@@ -396,15 +481,14 @@ export default function EmployeeLesson() {
                       <p className="text-xs text-gray-500">PDF Document</p>
                     </div>
                   </div>
-                  <a
-                    href={getFullUrl(material.file)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => handleProtectedDownload(material)}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1F4842] text-white text-sm hover:bg-[#17352e] transition-colors"
                   >
                     <FileDown className="w-4 h-4" />
                     Download
-                  </a>
+                  </button>
                 </div>
               ))}
             </div>
@@ -415,7 +499,7 @@ export default function EmployeeLesson() {
             <div className="space-y-3">
               <p className="text-sm font-medium text-gray-700">Audio Materials</p>
               {audioMaterials.map((material) => (
-                <div 
+                <div
                   key={material.id}
                   className="p-4 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]"
                 >
@@ -428,15 +512,29 @@ export default function EmployeeLesson() {
                       <p className="text-xs text-gray-500">Audio</p>
                     </div>
                   </div>
-                  <audio controls className="w-full">
-                    <source src={getFullUrl(material.file)} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                  </audio>
+
+                  <div>
+                    {!audioSrcMap[material.id] && (
+                      <button
+                        type="button"
+                        onClick={() => loadAudioSource(material)}
+                        className="mb-3 px-3 py-2 rounded-lg bg-[#1F4842] text-white text-sm hover:bg-[#17352e] transition-colors"
+                      >
+                        Load Audio
+                      </button>
+                    )}
+
+                    {audioSrcMap[material.id] && (
+                      <audio controls className="w-full">
+                        <source src={audioSrcMap[material.id]} type="audio/mpeg" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           )}
-
           {/* TEXT */}
           {textMaterial && (
             <div className="p-6 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]">
