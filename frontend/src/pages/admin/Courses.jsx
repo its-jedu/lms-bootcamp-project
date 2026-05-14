@@ -10,7 +10,7 @@ function Courses() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axiosInstance.get("api/courses/");
+        const response = await axiosInstance.get("api/courses");
         setCourses(await response.data);
       } catch (error) {
         console.error("Error fetching courses:", error);
@@ -22,7 +22,7 @@ function Courses() {
 
   const handlePublishCourse = async (courseId) => {
     try {
-      await axiosInstance.patch(`api/courses/${courseId}/publish/`);
+      await axiosInstance.post(`/courses/${courseId}/publish`);
       // Update the course status in the UI
       setCourses((prevCourses) =>
         prevCourses.map((course) =>
@@ -109,11 +109,34 @@ function Courses() {
 
                 <td className="px-5 py-4">
                   {course.status === "draft" && (
-                    <button
-                      onClick={() => handlePublishCourse(course.id)}
-                      className="bg-[#1f4842] hover:bg-[#173a35] text-white text-[10px] px-4 h-[28px] rounded-[4px]"
-                    >
-                      Publish
+                    <>
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/courses/${course.id}/edit`)
+                        }
+                        className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-4 h-[28px] rounded-[4px] mr-2"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handlePublishCourse(course.id)}
+                        className="bg-[#1f4842] hover:bg-[#173a35] text-white text-[10px] px-4 h-[28px] rounded-[4px]"
+                      >
+                        Publish
+                      </button>
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/courses/${course.id}/delete`)
+                        }
+                        className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-4 h-[28px] rounded-[4px] mr-2"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                  {course.status === "published" && (
+                    <button className="bg-[#e5ebff] hover:bg-[#d0d9ff] text-[#5f6ea7] text-[10px] px-4 h-[28px] rounded-[4px]">
+                      View course
                     </button>
                   )}
                 </td>
