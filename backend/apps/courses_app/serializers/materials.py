@@ -22,12 +22,26 @@ ALLOWED_VIDEO_HOSTS = {
 }
 
 class MaterialSerializer(serializers.ModelSerializer):
-    #file = serializers.SerializerMethodField()
+    download_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Material
-        fields = ["id", "lesson", "material_type", "filename", "storage_provider", "provider_file_id", "provider_path", "text_content", "video_url", "uploaded_at"]    
-        read_only_fields = ["id", "lesson", "filename", "uploaded_at"]
+        fields = [
+            "id", "lesson", "material_type", "filename", 
+            "storage_provider", "provider_file_id", "provider_path", 
+            "text_content", "video_url", "uploaded_at", "download_url"
+        ]    
+        read_only_fields = ["id", "lesson", "filename", "uploaded_at", "download_url"]
+    
+    def get_download_url(self, obj):
+        """Generate download URL for file materials"""
+        if obj.material_type in ["pdf", "audio"] and obj.provider_path:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(
+                    f"/api/lessons/{obj.lesson.id}/materials/{obj.id}/download/"
+                )
+        return None
     
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -47,6 +61,7 @@ class MaterialSerializer(serializers.ModelSerializer):
                 "storage_provider",
                 "provider_file_id",
                 "provider_path",
+                "download_url",
             }
 
         elif material_type == "text":

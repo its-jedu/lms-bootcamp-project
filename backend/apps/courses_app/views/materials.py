@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 import os
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponseRedirect
+from apps.courses_app.services.cloudinary_storage import CloudinaryStorageService
 from apps.courses_app.services.dropbox_storage import DropboxStorageService
 from apps.admin_app.permissions import IsAdmin
 from apps.courses_app.models import CourseAssignment, Lesson, Material
@@ -76,38 +76,41 @@ class MaterialViewSet(viewsets.ViewSet):
         material_type = FILE_TYPE[extension]
         filename = file.name
 
-        duplicate_exits = Material.objects.filter(
+        duplicate_exists = Material.objects.filter(
             lesson=lesson,
             filename=filename
         ).exists()
 
-        storage = DropboxStorageService()
+        # Use Cloudinary storage service
+        storage = CloudinaryStorageService()
 
         try:
             uploaded = storage.upload_file(file)
-        except Exception:
+        except Exception as e:
             return Response(
-                {"error": "Unable to upload file to storage provider."},
+                {"error": f"Unable to upload file to storage provider: {str(e)}"},
                 status=status.HTTP_502_BAD_GATEWAY
             )
 
-        if not duplicate_exits:
+        if not duplicate_exists:
             material = Material.objects.create(
-            lesson = lesson,
-            material_type = material_type,
-            filename=uploaded["filename"],
-            storage_provider=uploaded["storage_provider"],
-            provider_file_id=uploaded["provider_file_id"],
-            provider_path=uploaded["provider_path"],
-        )
+                lesson=lesson,
+                material_type=material_type,
+                filename=uploaded["filename"],
+                storage_provider=uploaded["storage_provider"],
+                provider_file_id=uploaded["provider_file_id"],
+                provider_path=uploaded["provider_path"],
+            )
         else: 
-            return Response({"message": "Duplicate file. A file with this same name already exists for this lesson."},
-                            status=status.HTTP_409_CONFLICT)
+            return Response(
+                {"message": "Duplicate file. A file with this same name already exists for this lesson."},
+                status=status.HTTP_409_CONFLICT
+            )
 
         return Response(
             MaterialSerializer(material, context={'request': request}).data, 
-            status=status.HTTP_201_CREATED)
-
+            status=status.HTTP_201_CREATED
+        )
 
     def download(self, request, lesson_id=None, pk=None):
         lesson = get_object_or_404(Lesson, id=lesson_id)
@@ -128,10 +131,22 @@ class MaterialViewSet(viewsets.ViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        storage = DropboxStorageService()
-        download_link = storage.get_download_link(material.provider_path)
+        # Use the appropriate storage service based on the storage_provider
+        if material.storage_provider == "cloudinary":
+            storage = CloudinaryStorageService()
+        else:
+            # Fallback to Dropbox for existing files
+            storage = DropboxStorageService()
+        
+        try:
+            download_url = storage.get_download_url(material.provider_path)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to generate download link: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-        return Response({"download_url": download_link}, status=status.HTTP_200_OK)
+        return Response({"download_url": download_url}, status=status.HTTP_200_OK)
 
     def create_text(self, request, lesson_id=None): 
         lesson = get_object_or_404(Lesson, id=lesson_id)
@@ -184,7 +199,11 @@ class MaterialViewSet(viewsets.ViewSet):
         
         material = get_object_or_404(Material, id=pk, lesson=lesson)
 
-        if material.storage_provider == "dropbox" and material.provider_path:
+        # Delete from storage provider based on which one was used
+        if material.storage_provider == "cloudinary" and material.provider_file_id:
+            storage = CloudinaryStorageService()
+            storage.delete_file(material.provider_file_id)
+        elif material.storage_provider == "dropbox" and material.provider_path:
             storage = DropboxStorageService()
             storage.delete_file(material.provider_path)
             
