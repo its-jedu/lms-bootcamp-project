@@ -13,6 +13,7 @@ export default function AdminTopNav() {
   const menuItems = [
     { name: "Dashboard", path: "dashboard" },
     { name: "Create Course", path: "create-course" },
+    { name: "Courses", path: "courses" },
     { name: "Manage Employees", path: "manage-employees" },
     { name: "Assign Course", path: "assign-course" },
     { name: "Track Progress", path: "track-progress" },
@@ -54,7 +55,11 @@ export default function AdminTopNav() {
         <div className="flex">
           <div className="bg-white">
             <span className="text-lg font-semibold text-gray-800">
-              <img src="../Dark-variation-logo.png" alt="Skillminds Logo" className="h-10 w-100%" />
+              <img
+                src="../Dark-variation-logo.png"
+                alt="Skillminds Logo"
+                className="h-10 w-100%"
+              />
             </span>
           </div>
         </div>
