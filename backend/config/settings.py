@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'cloudinary',
+    'cloudinary_storage',
     'core',
     'apps.auth_app.apps.AuthAppConfig',
     'apps.admin_app',
@@ -90,66 +92,40 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-
-# Production
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv("DB_NAME"),
-#         'USER': os.getenv("DB_USER"),
-#         'PASSWORD': os.getenv("DB_PASSWORD"),
-#         'HOST': os.getenv("DB_HOST"),
-#         'PORT': os.getenv("DB_PORT", "5432"),
-#     }
-# }
-
-
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv("DATABASE_URL")
     )
 }
 
-# PostgreSQL  
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'Webbly_db',
-#         'USER': 'Webbly_user',
-#         'PASSWORD': 'Admin123',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
+# Cloudinary settings - Always available, not just in production
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+}
 
 # Cloudinary settings
-if not DEBUG:
-    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
-    
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-        'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-        'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
-    }
-    # Custom storage to handle all file types properly  
-    from cloudinary_storage.storage import MediaCloudinaryStorage
-    import cloudinary    
-      
-    class CustomCloudinaryStorage(MediaCloudinaryStorage):
-        def _upload(self, name, content, options=None):
-            if options is None:
-                options = {}
-            options['resource_type'] = 'auto'
-            return cloudinary.uploader.upload(content, **options)
-    
-    DEFAULT_FILE_STORAGE = 'config.settings.CustomCloudinaryStorage'
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+}
+
+# Initialize Cloudinary globally
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    secure=True
+)
+
+# Use Cloudinary for media file storage
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Password validation
 # https://docs.djangoproject.com/en/6.0/settings/#auth-password-validators
 
@@ -240,6 +216,6 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
 
-# Dropbox settings
+# Dropbox settings (kept for reference, not used)
 DROPBOX_ACCESS_TOKEN = os.getenv("DROPBOX_ACCESS_TOKEN", "")
 DROPBOX_APP_FOLDER = os.getenv("DROPBOX_APP_FOLDER", "/materials")

@@ -9,6 +9,6 @@ whitenoise==6.6.0
 dj-database-url==2.1.0
 djangorestframework-simplejwt==5.3.0
 setuptools==75.8.0
-cloudinary
-django-cloudinary-storage
+cloudinary>=1.36.0
+django-cloudinary-storage>=0.3.0
 dropbox==12.0.2
