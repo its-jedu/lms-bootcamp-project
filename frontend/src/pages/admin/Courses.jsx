@@ -18,7 +18,7 @@ function Courses() {
     };
 
     fetchCourses();
-  }, []);
+  }, [courses]);
 
   const handlePublishCourse = async (courseId) => {
     try {
