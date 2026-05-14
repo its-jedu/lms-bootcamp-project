@@ -43,6 +43,19 @@ class CourseViewSet(viewsets.ViewSet):
     @action(detail=True, methods=["patch"])
     def publish(self, request, pk=None):
         course = get_object_or_404(Course, pk=pk)
+
+        if not course.lessons.exists():
+            return Response(
+                {"error": "Course must have at least one lesson before publishing."},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+        
+        if not course.lessons.filter(materials__isnull=False).exists():
+            return Response(
+                {"error": "At least one learning content item is required before publishing."},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+        
         course.status = "published"
         course.save(update_fields=["status", "updated_at"])
         return Response(CourseSerializer(course).data)
