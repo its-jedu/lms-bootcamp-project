@@ -22,7 +22,7 @@ function Courses() {
 
   const handlePublishCourse = async (courseId) => {
     try {
-      await axiosInstance.post(`api/courses/${courseId}/publish`);
+      await axiosInstance.patch(`api/courses/${courseId}/publish/`);
       // Update the course status in the UI
       setCourses((prevCourses) =>
         prevCourses.map((course) =>
