@@ -50,9 +50,9 @@ class CourseViewSet(viewsets.ViewSet):
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
         
-        if not course.lessons.filter(materials__isnull=False).exists():
+        if course.lessons.filter(materials__isnull=True).exists():
             return Response(
-                {"error": "At least one learning content item is required before publishing."},
+                {"error": "Every lesson must have at least one learning content item before publishing."},
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
         
