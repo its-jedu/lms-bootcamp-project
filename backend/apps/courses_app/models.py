@@ -44,8 +44,8 @@ class Lesson(models.Model):
 
 class LessonProgress(models.Model):
     STATUS_CHOICES = [
-        ("not_started", "Not Started"),
-        ("complete", "Complete"),
+        ("not_done", "Not Done"),
+        ("done", "Done"),
     ]
 
     employee = models.ForeignKey(
@@ -61,9 +61,8 @@ class LessonProgress(models.Model):
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default="not_started"
+        default="not_done",
     )
-    started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 

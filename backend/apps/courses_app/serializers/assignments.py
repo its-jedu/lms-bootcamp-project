@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from apps.auth_app.models import User
-from apps.courses_app.models import CourseAssignment, Course
+from apps.courses_app.models import CourseAssignment, Course, LessonProgress
 
 # For Admin Create assignment
 class CourseAssignmentCreateSerializer(serializers.Serializer):
@@ -56,11 +56,15 @@ class CourseAssignmentSerializer(serializers.ModelSerializer):
         ]
 
 # For employee assigned-course dashboard responses
-class AssignedCourseSerializer(serializers.ModelSerializer):
+class AssignedCoursesSerializer(serializers.ModelSerializer):
     assignment_id = serializers.IntegerField(source="id", read_only=True)
     course_id = serializers.IntegerField(source="course.id", read_only=True)
     title = serializers.CharField(source="course.title", read_only=True)
     description = serializers.CharField(source="course.description", read_only=True)
+
+    total_lessons = serializers.SerializerMethodField()
+    done_lessons = serializers.SerializerMethodField()
+    progress_percentage = serializers.SerializerMethodField()
 
     class Meta:
         model = CourseAssignment
@@ -73,4 +77,30 @@ class AssignedCourseSerializer(serializers.ModelSerializer):
             "assigned_at",
             "started_at",
             "completed_at",
+            "total_lessons",
+            "done_lessons",
+            "progress_percentage",
         ]
+
+    def get_total_lessons(self, obj):
+        return obj.course.lessons.count()
+
+    def get_done_lessons(self, obj):
+        return LessonProgress.objects.filter(
+            employee=obj.employee,
+            lesson__course=obj.course,
+            status="done"
+        ).count()
+
+    def get_progress_percentage(self, obj):
+        total_lessons = obj.course.lessons.count()
+        if total_lessons == 0:
+            return 0
+
+        done_lessons = LessonProgress.objects.filter(
+            employee=obj.employee,
+            lesson__course=obj.course,
+            status="done"
+        ).count()
+
+        return int((done_lessons / total_lessons) * 100)

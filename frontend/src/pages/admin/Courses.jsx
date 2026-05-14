@@ -10,7 +10,7 @@ function Courses() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axiosInstance.get("api/courses");
+        const response = await axiosInstance.get("api/courses/");
         setCourses(await response.data);
       } catch (error) {
         console.error("Error fetching courses:", error);
@@ -22,7 +22,7 @@ function Courses() {
 
   const handlePublishCourse = async (courseId) => {
     try {
-      await axiosInstance.post(`api/courses/${courseId}/publish`);
+      await axiosInstance.patch(`api/courses/${courseId}/publish/`);
       // Update the course status in the UI
       setCourses((prevCourses) =>
         prevCourses.map((course) =>
