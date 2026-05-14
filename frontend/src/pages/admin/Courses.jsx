@@ -22,7 +22,7 @@ function Courses() {
 
   const handlePublishCourse = async (courseId) => {
     try {
-      await axiosInstance.post(`/courses/${courseId}/publish`);
+      await axiosInstance.post(`api/courses/${courseId}/publish`);
       // Update the course status in the UI
       setCourses((prevCourses) =>
         prevCourses.map((course) =>
@@ -126,7 +126,11 @@ function Courses() {
                       </button>
                       <button
                         onClick={() =>
-                          navigate(`/admin/courses/${course.id}/delete`)
+                          axiosInstance.delete(`api/courses/${course.id}/`).then(() => {
+                            setCourses((prevCourses) =>
+                              prevCourses.filter((c) => c.id !== course.id),
+                            );
+                          })
                         }
                         className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-4 h-[28px] rounded-[4px] mr-2"
                       >
