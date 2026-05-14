@@ -1,6 +1,6 @@
 from .assignments import (
     CourseAssignmentCreateSerializer,
-    AssignedCourseSerializer,
+    AssignedCoursesSerializer,
     CourseAssignmentSerializer,
 )
 

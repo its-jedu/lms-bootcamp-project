@@ -5,8 +5,8 @@ from django.db import transaction
 
 from apps.admin_app.permissions import IsAdmin
 from apps.courses_app.models import CourseAssignment
-from apps.courses_app.serializers import (
-    AssignedCourseSerializer,
+from apps.courses_app.serializers.assignments import (
+    AssignedCoursesSerializer,
     CourseAssignmentCreateSerializer,
     CourseAssignmentSerializer,
 )
@@ -93,5 +93,5 @@ class CourseAssignmentViewSet(viewsets.ViewSet):
             course__status="published"
         )
 
-        serializer = AssignedCourseSerializer(assignments, many=True)
+        serializer = AssignedCoursesSerializer(assignments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

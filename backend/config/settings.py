@@ -239,3 +239,7 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
+
+# Dropbox settings
+DROPBOX_ACCESS_TOKEN = os.getenv("DROPBOX_ACCESS_TOKEN", "")
+DROPBOX_APP_FOLDER = os.getenv("DROPBOX_APP_FOLDER", "/materials")

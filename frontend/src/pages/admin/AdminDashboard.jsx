@@ -10,7 +10,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     async function fetchCourses() {
       try {
@@ -22,7 +22,7 @@ export default function AdminDashboard() {
             data.map(async (course) => {
               try {
                 const lessonsRes = await axiosInstance.get(
-                  `api/courses/${course.id}/lessons/`
+                  `api/courses/${course.id}/lessons/`,
                 );
                 return {
                   ...course,
@@ -34,7 +34,7 @@ export default function AdminDashboard() {
                   lessonCount: 0,
                 };
               }
-            })
+            }),
           );
           setCourses(coursesWithLessons);
         } else {
@@ -49,7 +49,8 @@ export default function AdminDashboard() {
     fetchCourses();
   }, []);
 
-  const handleViewCourse = (courseId) => navigate(`../create-course?edit=${courseId}`);
+  const handleViewCourse = (courseId) =>
+    navigate(`../create-course?edit=${courseId}`);
 
   if (loading) {
     return (
@@ -72,8 +73,10 @@ export default function AdminDashboard() {
         </div>
       );
     } else {
-      const draftCourses = courses.filter((course) => course.status.toLowerCase() === "draft");
-      
+      const draftCourses = courses.filter(
+        (course) => course.status.toLowerCase() === "draft",
+      );
+
       content = (
         <div className="mt-8">
           {draftCourses.length > 0 && (
@@ -93,7 +96,8 @@ export default function AdminDashboard() {
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] text-gray-500">Course</p>
                         <p className="text-[10px] text-gray-500">
-                          {course.lessonCount} {course.lessonCount === 1 ? "Lesson" : "Lessons"}
+                          {course.lessonCount}{" "}
+                          {course.lessonCount === 1 ? "Lesson" : "Lessons"}
                         </p>
                       </div>
 
@@ -112,7 +116,9 @@ export default function AdminDashboard() {
                               : "bg-[#e0e7ff] text-[#3730a3]"
                           }`}
                         >
-                          {course.status === "published" ? "Published" : "Draft"}
+                          {course.status === "published"
+                            ? "Published"
+                            : "Draft"}
                         </span>
 
                         <div className="flex">
@@ -154,7 +160,9 @@ export default function AdminDashboard() {
                 <h1 className="text-[32px] font-bold text-[#1f4842]">
                   Welcome {user.role}!
                 </h1>
-                <p className="text-[24px] font-normal text-[#1f4842]">Ready to build Course?</p>
+                <p className="text-[24px] font-normal text-[#1f4842]">
+                  Ready to build Course?
+                </p>
               </div>
 
               <div className="w-[312px] h-[308px] overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">

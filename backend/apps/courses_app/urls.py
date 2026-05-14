@@ -27,12 +27,20 @@ lesson_reorder = LessonViewSet.as_view(
     }
 )
 
+lesson_complete = LessonViewSet.as_view({
+    "post": "complete",
+})
+
 lesson_materials = MaterialViewSet.as_view({
     "get": "list",
 })
 
 lesson_material_file = MaterialViewSet.as_view({
     "post": "create_file",
+})
+
+lesson_material_download = MaterialViewSet.as_view({
+    "get": "download",
 })
 
 lesson_material_text = MaterialViewSet.as_view({
@@ -61,13 +69,15 @@ urlpatterns = [
     path("courses/<int:course_id>/lessons/",lesson_list,name="course-lessons",),
     path("courses/<int:course_id>/lessons/reorder/",lesson_reorder,name="course-lessons-reorder",),
     path("courses/<int:course_id>/lessons/<int:pk>/",lesson_detail, name="course-lesson-detail",),
+    path("courses/<int:course_id>/lessons/<int:pk>/complete/", lesson_complete, name="course-lesson-complete"),
     
     path("lessons/<int:lesson_id>/materials/", lesson_materials, name="material-list"),
     path("lessons/<int:lesson_id>/materials/file/", lesson_material_file, name="material-create-file"),
     path("lessons/<int:lesson_id>/materials/text/", lesson_material_text, name="material-create-text"),
     path("lessons/<int:lesson_id>/materials/video/", lesson_material_video, name="material-create-video"),
     path("lessons/<int:lesson_id>/materials/<int:pk>/", lesson_material_delete, name="material-detail"),    
-    
+    path("lessons/<int:lesson_id>/materials/<int:pk>/download/", lesson_material_download, name="material-download"),
+
     # To keep the same style as "/admin/dashboard/" for admin routing
     path("admin/course-assignments/", course_assignments, name="course-assignments"),
     path("employee/assigned-courses/", employee_assigned_courses, name="employee-assigned-courses"), 

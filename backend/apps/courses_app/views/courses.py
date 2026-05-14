@@ -10,7 +10,7 @@ from apps.courses_app.serializers import CourseSerializer, CourseUpdateSerialize
 
 class CourseViewSet(viewsets.ViewSet):
     def get_permissions(self):
-        if self.action in ["create", "publish", "partial_update"]:
+        if self.action in ["create", "publish", "partial_update", "destroy"]:
             return [IsAuthenticated(), IsAdmin()]
         return [IsAuthenticated()]
     
@@ -43,6 +43,19 @@ class CourseViewSet(viewsets.ViewSet):
     @action(detail=True, methods=["patch"])
     def publish(self, request, pk=None):
         course = get_object_or_404(Course, pk=pk)
+
+        if not course.lessons.exists():
+            return Response(
+                {"error": "Course must have at least one lesson before publishing."},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+        
+        if course.lessons.filter(materials__isnull=True).exists():
+            return Response(
+                {"error": "Every lesson must have at least one learning content item before publishing."},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+        
         course.status = "published"
         course.save(update_fields=["status", "updated_at"])
         return Response(CourseSerializer(course).data)
@@ -50,6 +63,13 @@ class CourseViewSet(viewsets.ViewSet):
     def partial_update(self, request, pk=None):
         course = get_object_or_404(Course, pk=pk)
 
+        # Ensure published courses won't be updated
+        if course.status == "published":
+            return Response(
+                {"error": "Published courses are view only."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        
         serializer = CourseUpdateSerializer(
             course,
             data=request.data,
@@ -61,3 +81,15 @@ class CourseViewSet(viewsets.ViewSet):
         
         serializer.save()
         return Response(CourseSerializer(course).data)
+    
+    def destroy(self, request, pk=None):
+        course = get_object_or_404(Course, pk=pk)
+
+        if course.status == "published":
+            return Response(
+                {"error": "Published courses are protected from deletion."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        
+        course.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

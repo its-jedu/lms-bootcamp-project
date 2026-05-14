@@ -6,7 +6,8 @@ from rest_framework.response import Response
 
 import os
 from django.shortcuts import get_object_or_404
-
+from django.http import HttpResponseRedirect
+from apps.courses_app.services.dropbox_storage import DropboxStorageService
 from apps.admin_app.permissions import IsAdmin
 from apps.courses_app.models import CourseAssignment, Lesson, Material
 from apps.courses_app.serializers import (
@@ -30,12 +31,23 @@ class MaterialViewSet(viewsets.ViewSet):
             return True
 
         if getattr(user, "role", None) == "employee":
+            if lesson.course.status != "published":
+                return False
+            
             return CourseAssignment.objects.filter(
                 employee = user,
                 course_id = lesson.course_id,
                 is_active = True
             ).exists()
         return False
+    
+    def _ensure_draft_course(self, course):
+        if course.status == "published":
+            return Response(
+                {"error": "Published courses are view only."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return None
     
     def list(self, request, lesson_id=None):
         lesson = get_object_or_404(Lesson, id=lesson_id)
@@ -49,6 +61,11 @@ class MaterialViewSet(viewsets.ViewSet):
     
     def create_file(self, request, lesson_id=None):
         lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        locked_response = self._ensure_draft_course(lesson.course)
+        if locked_response:
+            return locked_response
+        
         serializer = FileMaterialUploadSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -64,13 +81,24 @@ class MaterialViewSet(viewsets.ViewSet):
             filename=filename
         ).exists()
 
+        storage = DropboxStorageService()
+
+        try:
+            uploaded = storage.upload_file(file)
+        except Exception:
+            return Response(
+                {"error": "Unable to upload file to storage provider."},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
 
         if not duplicate_exits:
             material = Material.objects.create(
             lesson = lesson,
             material_type = material_type,
-            file = file,
-            filename = filename,
+            filename=uploaded["filename"],
+            storage_provider=uploaded["storage_provider"],
+            provider_file_id=uploaded["provider_file_id"],
+            provider_path=uploaded["provider_path"],
         )
         else: 
             return Response({"message": "Duplicate file. A file with this same name already exists for this lesson."},
@@ -79,9 +107,39 @@ class MaterialViewSet(viewsets.ViewSet):
         return Response(
             MaterialSerializer(material, context={'request': request}).data, 
             status=status.HTTP_201_CREATED)
-    
+
+
+    def download(self, request, lesson_id=None, pk=None):
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        material = get_object_or_404(Material, id=pk, lesson=lesson)
+
+        if not self._user_can_view_material(request.user, lesson):
+            raise PermissionDenied("You do not have permission to download this material.")
+
+        if material.material_type not in ["pdf", "audio"]:
+            return Response(
+                {"error": "This material is not a downloadable file."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not material.provider_path:
+            return Response(
+                {"error": "No downloadable file reference available for this material."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        storage = DropboxStorageService()
+        download_link = storage.get_download_link(material.provider_path)
+
+        return Response({"download_url": download_link}, status=status.HTTP_200_OK)
+
     def create_text(self, request, lesson_id=None): 
         lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        locked_response = self._ensure_draft_course(lesson.course)
+        if locked_response:
+            return locked_response
+        
         serializer = TextMeterialSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -98,6 +156,11 @@ class MaterialViewSet(viewsets.ViewSet):
 
     def create_video(self, request, lesson_id=None): 
         lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        locked_response = self._ensure_draft_course(lesson.course)
+        if locked_response:
+            return locked_response
+        
         serializer = VideoMeterialSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -114,11 +177,17 @@ class MaterialViewSet(viewsets.ViewSet):
 
     def destroy(self, request, lesson_id=None, pk=None):
         lesson = get_object_or_404(Lesson, id=lesson_id)
+
+        locked_response = self._ensure_draft_course(lesson.course)
+        if locked_response:
+            return locked_response
+        
         material = get_object_or_404(Material, id=pk, lesson=lesson)
 
-        if material.file:
-            material.file.delete(save=False)
-        
+        if material.storage_provider == "dropbox" and material.provider_path:
+            storage = DropboxStorageService()
+            storage.delete_file(material.provider_path)
+            
         material.delete()
 
         return Response({"message": "Material deleted successfully."}, status=status.HTTP_200_OK)

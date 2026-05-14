@@ -32,11 +32,11 @@ export default function CreateCourse() {
 
   const [lessons, setLessons] = useState([]);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [materialsByLesson, setMaterialsByLesson] = useState({});
   const [videoUrl, setVideoUrl] = useState("");
-  const [courses, setCourses] = useState([]);
   const [editingLessonId, setEditingLessonId] = useState(null);
   const [editingLessonTitle, setEditingLessonTitle] = useState("");
+  const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
 
   // Drag state
   const [dragIndex, setDragIndex] = useState(null);
@@ -46,28 +46,51 @@ export default function CreateCourse() {
     return lessons.find((l) => l.id === selectedLessonId) ?? null;
   }, [lessons, selectedLessonId]);
 
-  const fetchCourses = useCallback(async () => {
-    try {
-      const response = await axiosInstance.get("/api/courses/");
-      setCourses(response.data);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
+  const selectedLessonServerId = selectedLesson?.serverId || selectedLesson?.id;
+
+  const selectedLessonMaterials = selectedLessonServerId
+    ? materialsByLesson[selectedLessonServerId] || []
+    : [];
+
+  useEffect(() => {
+    if (!selectedLessonServerId) return;
+
+    async function fetchLessonMaterials() {
+      try {
+        const response = await axiosInstance.get(
+          `/api/lessons/${selectedLessonServerId}/materials/`,
+        );
+
+        setMaterialsByLesson((prev) => ({
+          ...prev,
+          [selectedLessonServerId]: response.data,
+        }));
+      } catch (error) {
+        console.error("Error fetching lesson materials:", error);
+        setMaterialsByLesson((prev) => ({
+          ...prev,
+          [selectedLessonServerId]: [],
+        }));
+      }
     }
-  }, []);
+    fetchLessonMaterials();
+  }, [selectedLessonServerId]);
 
   const loadExistingCourse = useCallback(async (courseId) => {
     try {
       const courseRes = await axiosInstance.get(`/api/courses/${courseId}/`);
       const course = courseRes.data;
-      
+
       setCourseData({
         title: course.title,
         description: course.description,
       });
       setCurrentCourseId(course.id);
-      
+
       try {
-        const lessonsRes = await axiosInstance.get(`/api/courses/${courseId}/lessons/`);
+        const lessonsRes = await axiosInstance.get(
+          `/api/courses/${courseId}/lessons/`,
+        );
         const loadedLessons = lessonsRes.data.map((lesson) => ({
           id: lesson.id,
           title: lesson.title,
@@ -89,11 +112,11 @@ export default function CreateCourse() {
   }, []);
 
   useEffect(() => {
-    fetchCourses();
     if (editCourseId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadExistingCourse(editCourseId);
     }
-  }, [fetchCourses, loadExistingCourse, editCourseId]);
+  }, [loadExistingCourse, editCourseId]);
 
   const handleSaveDraft = async (e) => {
     try {
@@ -104,7 +127,6 @@ export default function CreateCourse() {
           description: courseData.description,
         });
         alert("Draft updated successfully!");
-        fetchCourses();
       } else {
         const payload = {
           title: courseData.title,
@@ -112,7 +134,6 @@ export default function CreateCourse() {
         };
         const response = await axiosInstance.post("/api/courses/", payload);
         setCurrentCourseId(response.data.id);
-        setCourses((prev) => [...prev, response.data]);
         alert("Draft saved successfully!");
       }
     } catch (error) {
@@ -133,7 +154,7 @@ export default function CreateCourse() {
         {
           title: `Lesson ${lessons.length + 1}`,
           objective: "",
-        }
+        },
       );
       const newLesson = {
         id: response.data.id,
@@ -157,7 +178,7 @@ export default function CreateCourse() {
 
     try {
       await axiosInstance.delete(
-        `/api/courses/${currentCourseId}/lessons/${lesson.serverId || lessonId}/`
+        `/api/courses/${currentCourseId}/lessons/${lesson.serverId || lessonId}/`,
       );
       setLessons((prev) => {
         const nextLessons = prev.filter((l) => l.id !== lessonId);
@@ -224,12 +245,12 @@ export default function CreateCourse() {
         {
           title: editingLessonTitle,
           objective: lesson.objective || "",
-        }
+        },
       );
       setLessons((prev) =>
         prev.map((l) =>
-          l.id === lessonId ? { ...l, title: editingLessonTitle } : l
-        )
+          l.id === lessonId ? { ...l, title: editingLessonTitle } : l,
+        ),
       );
       setEditingLessonId(null);
     } catch (error) {
@@ -241,6 +262,11 @@ export default function CreateCourse() {
   const handleSaveLesson = async () => {
     if (!selectedLesson || !currentCourseId) return;
 
+    if (selectedLessonMaterials.length === 0) {
+      alert("Please add at least one material before saving this lesson.");
+      return;
+    }
+
     try {
       const payload = {
         title: selectedLesson.title,
@@ -248,7 +274,7 @@ export default function CreateCourse() {
       };
       await axiosInstance.patch(
         `/api/courses/${currentCourseId}/lessons/${selectedLesson.serverId || selectedLesson.id}/`,
-        payload
+        payload,
       );
       alert("Lesson saved successfully!");
     } catch (error) {
@@ -259,56 +285,59 @@ export default function CreateCourse() {
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
-    if (!files.length || !selectedLesson || !currentCourseId) return;
+    if (!files.length || !selectedLessonServerId || !currentCourseId) return;
 
-    for (const file of files) {
-      const newFile = { id: Date.now() + Math.random() + file.name, name: file.name, status: "uploading" };
-      setUploadedFiles((prev) => [...prev, newFile]);
+    setIsUploadingMaterial(true);
 
-      try {
+    try {
+      for (const file of files) {
         const formData = new FormData();
         formData.append("file", file);
 
-        await axiosInstance.post(
-          `/api/lessons/${selectedLesson.serverId || selectedLesson.id}/materials/file/`,
+        const response = await axiosInstance.post(
+          `/api/lessons/${selectedLessonServerId}/materials/file/`,
           formData,
           {
             headers: { "Content-Type": "multipart/form-data" },
-          }
+          },
         );
 
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.id === newFile.id ? { ...f, status: "success" } : f
-          )
-        );
-      } catch (error) {
-        console.error("Error uploading file:", error);
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.id === newFile.id ? { ...f, status: "error" } : f
-          )
-        );
+        setMaterialsByLesson((prev) => ({
+          ...prev,
+          [selectedLessonServerId]: [
+            ...(prev[selectedLessonServerId] || []),
+            response.data,
+          ],
+        }));
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Failed to upload material");
+    } finally {
+      setIsUploadingMaterial(false);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
     }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const removeFile = (id) => {
-    setUploadedFiles((prev) => prev.filter((file) => file.id !== id));
   };
 
   const handleAddVideo = async () => {
-    if (!videoUrl || !selectedLesson || !currentCourseId) return;
+    if (!videoUrl || !selectedLessonServerId || !currentCourseId) return;
 
     try {
-      await axiosInstance.post(
-        `/api/lessons/${selectedLesson.serverId || selectedLesson.id}/materials/video/`,
-        { video_url: videoUrl }
+      const response = await axiosInstance.post(
+        `/api/lessons/${selectedLessonServerId}/materials/video/`,
+        { video_url: videoUrl },
       );
+      setMaterialsByLesson((prev) => ({
+        ...prev,
+        [selectedLessonServerId]: [
+          ...(prev[selectedLessonServerId] || []),
+          response.data,
+        ],
+      }));
+      setVideoUrl("");
       alert("Video URL saved successfully!");
     } catch (error) {
       console.error("Error saving video:", error);
@@ -316,14 +345,23 @@ export default function CreateCourse() {
     }
   };
 
-  const handlePublishCourse = async (courseId) => {
+  const removeMaterial = async (materialId) => {
+    if (!selectedLessonServerId) return;
+
     try {
-      await axiosInstance.patch(`/api/courses/${courseId}/publish/`);
-      alert("Course published successfully!");
-      fetchCourses();
+      await axiosInstance.delete(
+        `/api/lessons/${selectedLessonServerId}/materials/${materialId}/`,
+      );
+
+      setMaterialsByLesson((prev) => ({
+        ...prev,
+        [selectedLessonServerId]: (prev[selectedLessonServerId] || []).filter(
+          (material) => material.id !== materialId,
+        ),
+      }));
     } catch (error) {
-      console.error("Error publishing course:", error);
-      alert("Failed to publish course");
+      console.error("Error deleting material:", error);
+      alert("Failed to delete material");
     }
   };
 
@@ -380,7 +418,10 @@ export default function CreateCourse() {
                   rows={5}
                   value={courseData.description}
                   onChange={(e) =>
-                    setCourseData({ ...courseData, description: e.target.value })
+                    setCourseData({
+                      ...courseData,
+                      description: e.target.value,
+                    })
                   }
                   className="w-full text-[12px] resize-none"
                 />
@@ -465,7 +506,10 @@ export default function CreateCourse() {
                   >
                     <div
                       className="flex items-center gap-2 cursor-pointer flex-1 min-w-0"
-                      onClick={() => setSelectedLessonId(lesson.id)}
+                      onClick={() => {
+                        setSelectedLessonId(lesson.id);
+                        setVideoUrl("");
+                      }}
                     >
                       {/* DRAG ICON */}
                       <GripVertical className="w-[15px] h-[15px] text-[#9a9a9a] cursor-grab flex-shrink-0" />
@@ -473,7 +517,9 @@ export default function CreateCourse() {
                       {editingLessonId === lesson.id ? (
                         <input
                           value={editingLessonTitle}
-                          onChange={(e) => setEditingLessonTitle(e.target.value)}
+                          onChange={(e) =>
+                            setEditingLessonTitle(e.target.value)
+                          }
                           onBlur={() => saveEditingLesson(lesson.id)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") saveEditingLesson(lesson.id);
@@ -550,8 +596,8 @@ export default function CreateCourse() {
                         prev.map((l) =>
                           l.id === selectedLesson.id
                             ? { ...l, title: e.target.value }
-                            : l
-                        )
+                            : l,
+                        ),
                       );
                     }
                   }}
@@ -577,8 +623,8 @@ export default function CreateCourse() {
                           prev.map((l) =>
                             l.id === selectedLesson.id
                               ? { ...l, objective: value }
-                              : l
-                          )
+                              : l,
+                          ),
                         );
                       }
                     }}
@@ -647,8 +693,7 @@ export default function CreateCourse() {
                 </div>
 
                 <p className="text-[11px] text-[#7d7d7d] mb-4">
-                  Supported files: Audio (MP3 and WAV), File
-                  (PDF)
+                  Supported files: Audio (MP3 and WAV), File (PDF)
                 </p>
 
                 <input
@@ -660,11 +705,17 @@ export default function CreateCourse() {
                   accept=".mp3,.wav,.pdf"
                 />
 
+                {isUploadingMaterial && (
+                  <p className="mb-3 text-[10px] text-[#7d7d7d]">
+                    Uploading...
+                  </p>
+                )}
+
                 {/* FILES */}
                 <div className="space-y-3">
-                  {uploadedFiles.map((file) => (
+                  {selectedLessonMaterials.map((material) => (
                     <div
-                      key={file.id}
+                      key={material.id}
                       className="flex items-center justify-between max-w-[320px]"
                     >
                       <div className="flex items-start gap-2">
@@ -672,24 +723,14 @@ export default function CreateCourse() {
 
                         <div>
                           <p className="text-[11px] text-[#222222]">
-                            {file.name}
+                            {material.filename ||
+                              material.video_url ||
+                              "Lesson Material"}
                           </p>
 
-                          {file.status === "uploading" && (
-                            <p className="text-[10px] text-[#7d7d7d]">
-                              Uploading...
-                            </p>
-                          )}
-                          {file.status === "success" && (
-                            <p className="text-[10px] text-[#2a9b57]">
-                              Successfully uploaded
-                            </p>
-                          )}
-                          {file.status === "error" && (
-                            <p className="text-[10px] text-red-500">
-                              Failed to upload
-                            </p>
-                          )}
+                          <p className="text-[10px] text-[#7d7d7d]">
+                            {material.material_type}
+                          </p>
                         </div>
                       </div>
 
@@ -698,7 +739,7 @@ export default function CreateCourse() {
                           <Pencil className="w-[13px] h-[13px] text-[#8c8c8c]" />
                         </button>
 
-                        <button onClick={() => removeFile(file.id)}>
+                        <button onClick={() => removeMaterial(material.id)}>
                           <Trash2 className="w-[13px] h-[13px] text-[#8c8c8c]" />
                         </button>
                       </div>
@@ -717,80 +758,6 @@ export default function CreateCourse() {
                   Save
                 </Button>
               </div>
-            </div>
-
-            {/* COURSE TABLE */}
-            <div className="bg-white border border-[#e5e5e5] mt-6">
-              {/* HEADER */}
-              <div className="px-5 py-4 border-b border-[#ececec]">
-                <h2 className="text-[32px] font-bold text-[#1f4842]">
-                  Course
-                </h2>
-
-                <p className="text-[11px] text-[#7d7d7d] mt-[4px]">
-                  view all your draft and published courses
-                </p>
-              </div>
-
-              {/* TABLE */}
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[#ececec]">
-                    <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
-                      Course Title
-                    </th>
-
-                    <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
-                      Status
-                    </th>
-
-                    <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {courses.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="px-5 py-6 text-center text-[11px] text-[#999999]">
-                        No courses yet
-                      </td>
-                    </tr>
-                  ) : (
-                    courses.map((course) => (
-                      <tr key={course.id} className="border-b border-[#f1f1f1]">
-                        <td className="px-5 py-4 text-[11px] text-[#444444]">
-                          {course.title}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <span
-                            className={`text-[10px] px-2 py-[3px] rounded-full ${
-                              course.status === "published"
-                                ? "bg-[#d8f0d9] text-[#397b45]"
-                                : "bg-[#e5ebff] text-[#5f6ea7]"
-                            }`}
-                          >
-                            {course.status === "published" ? "Published" : "Draft"}
-                          </span>
-                        </td>
-
-                        <td className="px-5 py-4">
-                          {course.status === "draft" && (
-                            <button
-                              onClick={() => handlePublishCourse(course.id)}
-                              className="bg-[#1f4842] hover:bg-[#173a35] text-white text-[10px] px-4 h-[28px] rounded-[4px]"
-                            >
-                              Publish
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
             </div>
           </div>
         </div>

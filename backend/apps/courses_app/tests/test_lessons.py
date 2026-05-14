@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.auth_app.models import User
-from apps.courses_app.models import Course, Lesson, CourseAssignment
+from apps.courses_app.models import Course, Lesson, CourseAssignment, LessonProgress
 
 class LessonAPITests(TestCase):
     def setUp(self):
@@ -21,8 +21,16 @@ class LessonAPITests(TestCase):
             role="employee",
         )
 
+        self.other_employee_user = User.objects.create_user(
+            email="otheremployee@example.com",
+            password="employeepass123",
+            role="employee",
+            is_active=True,
+        )
+
         self.admin_token = str(RefreshToken.for_user(self.admin_user).access_token)
         self.employee_token = str(RefreshToken.for_user(self.employee_user).access_token)
+        self.other_employee_token = str(RefreshToken.for_user(self.other_employee_user).access_token)
 
         self.course = Course.objects.create(
             title="Test Course",
@@ -32,9 +40,14 @@ class LessonAPITests(TestCase):
 
     def test_admin_can_create_lesson(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Editable",
+            status="draft",
+        )
 
         response = self.client.post(
-                f"/api/courses/{self.course.id}/lessons/",
+                f"/api/courses/{draft_course.id}/lessons/",
                 {
                     "title": "Introduction",
                     "objective": "Understand the course structure",
@@ -48,20 +61,25 @@ class LessonAPITests(TestCase):
         self.assertEqual(Lesson.objects.count(), 1)
 
         lesson = Lesson.objects.get()
-        self.assertEqual(lesson.course, self.course)
+        self.assertEqual(lesson.course, draft_course)
     
     def test_admin_can_update_lesson(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Editable",
+            status="draft",
+        )
 
         lesson = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Old Title",
             objective="Old objective",
             order=1,
         )
 
         response = self.client.patch(
-            f"/api/courses/{self.course.id}/lessons/{lesson.id}/",
+            f"/api/courses/{draft_course.id}/lessons/{lesson.id}/",
             {
                 "title": "Updated Title",
                 "objective": "Updated objective",
@@ -78,16 +96,21 @@ class LessonAPITests(TestCase):
     
     def test_admin_can_delete_lesson(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Editable",
+            status="draft",
+        )
 
         lesson = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Lesson to delete",
             objective="Delete objective",
             order=1,
         )
 
         response = self.client.delete(
-            f"/api/courses/{self.course.id}/lessons/{lesson.id}/"
+            f"/api/courses/{draft_course.id}/lessons/{lesson.id}/"
         )
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -150,28 +173,33 @@ class LessonAPITests(TestCase):
 
     def test_admin_can_reorder_lessons(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Editable",
+            status="draft",
+        )
 
         lesson_one = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Lesson One",
             objective="First",
             order=1,
         )
         lesson_two = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Lesson Two",
             objective="Second",
             order=2,
         )
         lesson_three = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Lesson Three",
             objective="Third",
             order=3,
         )
 
         response = self.client.patch(
-            f"/api/courses/{self.course.id}/lessons/reorder/",
+            f"/api/courses/{draft_course.id}/lessons/reorder/",
             {
                 "lesson_ids": [lesson_three.id, lesson_one.id, lesson_two.id],
             },
@@ -193,13 +221,58 @@ class LessonAPITests(TestCase):
         self.assertEqual(lesson_two.order, 3)
 
         list_response = self.client.get(
-        f"/api/courses/{self.course.id}/lessons/")
+        f"/api/courses/{draft_course.id}/lessons/")
 
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [lesson["id"] for lesson in list_response.data],
             [lesson_three.id, lesson_one.id, lesson_two.id],
         )
+
+    def test_admin_cannot_mutate_published_course_lessons(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+
+        lesson = Lesson.objects.create(
+            course=self.course,
+            title="Published Lesson",
+            objective="Locked",
+            order=1,
+        )
+
+        create_response = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/",
+            {
+                "title": "New Lesson",
+                "objective": "Should not be created",
+            },
+        )
+
+        update_response = self.client.patch(
+            f"/api/courses/{self.course.id}/lessons/{lesson.id}/",
+            {
+                "title": "Updated Title",
+                "objective": "Updated objective",
+            },
+        )
+
+        reorder_response = self.client.patch(
+            f"/api/courses/{self.course.id}/lessons/reorder/",
+            {"lesson_ids": [lesson.id]},
+            format="json",
+        )
+
+        delete_response = self.client.delete(
+            f"/api/courses/{self.course.id}/lessons/{lesson.id}/"
+        )
+
+        self.assertEqual(create_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(update_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(reorder_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(delete_response.status_code, status.HTTP_409_CONFLICT)
+
+        lesson.refresh_from_db()
+        self.assertEqual(lesson.title, "Published Lesson")
+        self.assertEqual(Lesson.objects.count(), 1)
     
     def test_employee_cannot_reorder_lessons(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
@@ -553,3 +626,359 @@ class LessonAPITests(TestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    # PROGRESS TESTING
+
+    def test_opening_course_does_not_change_progress_status(self):
+        lesson_1 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 1",
+            objective="Objective 1",
+            order=1,
+        )
+        lesson_2 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 2",
+            objective="Objective 2",
+            order=2,
+        )
+
+        self.assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=self.course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+
+        response = self.client.get(f"/api/courses/{self.course.id}/lessons/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.progress_status, "not_started")
+        self.assertIsNone(self.assignment.started_at)
+        self.assertIsNone(self.assignment.completed_at)
+
+    def test_marking_first_lesson_done_sets_course_in_progress(self):
+        lesson_1 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 1",
+            objective="Objective 1",
+            order=1,
+        )
+        lesson_2 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 2",
+            objective="Objective 2",
+            order=2,
+        )
+
+        self.assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=self.course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+
+        response = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/{lesson_1.id}/complete/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.progress_status, "in_progress")
+        self.assertIsNotNone(self.assignment.started_at)
+        self.assertIsNone(self.assignment.completed_at)
+
+        progress = LessonProgress.objects.get(
+            employee=self.employee_user,
+            lesson=lesson_1,
+        )
+        self.assertEqual(progress.status, "done")
+        self.assertIsNotNone(progress.completed_at)
+
+    def test_marking_all_lessons_done_sets_course_completed(self):
+        lesson_1 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 1",
+            objective="Objective 1",
+            order=1,
+        )
+        lesson_2 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 2",
+            objective="Objective 2",
+            order=2,
+        )
+
+        self.assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=self.course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+
+        response_1 = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/{lesson_1.id}/complete/"
+        )
+        response_2 = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/{lesson_2.id}/complete/"
+        )
+
+        self.assertEqual(response_1.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_2.status_code, status.HTTP_200_OK)
+
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.progress_status, "completed")
+        self.assertIsNotNone(self.assignment.started_at)
+        self.assertIsNotNone(self.assignment.completed_at)
+
+    def test_toggling_done_lesson_back_to_not_done_changes_completed_to_in_progress(self):
+        lesson_1 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 1",
+            objective="Objective 1",
+            order=1,
+        )
+        lesson_2 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 2",
+            objective="Objective 2",
+            order=2,
+        )
+
+        self.assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=self.course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+
+        self.client.post(f"/api/courses/{self.course.id}/lessons/{lesson_1.id}/complete/")
+        self.client.post(f"/api/courses/{self.course.id}/lessons/{lesson_2.id}/complete/")
+
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.progress_status, "completed")
+
+        response = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/{lesson_2.id}/complete/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.progress_status, "in_progress")
+        self.assertIsNone(self.assignment.completed_at)
+
+        progress = LessonProgress.objects.get(
+            employee=self.employee_user,
+            lesson=lesson_2,
+        )
+        self.assertEqual(progress.status, "not_done")
+        self.assertIsNone(progress.completed_at)
+
+    def test_toggling_last_done_lesson_back_to_not_done_changes_in_progress_to_not_started(self):
+        lesson_1 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 1",
+            objective="Objective 1",
+            order=1,
+        )
+        lesson_2 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 2",
+            objective="Objective 2",
+            order=2,
+        )
+
+        self.assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=self.course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+
+        self.client.post(f"/api/courses/{self.course.id}/lessons/{lesson_1.id}/complete/")
+
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.progress_status, "in_progress")
+
+        response = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/{lesson_1.id}/complete/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assignment.refresh_from_db()
+        self.assertEqual(self.assignment.progress_status, "not_started")
+        self.assertIsNone(self.assignment.started_at)
+        self.assertIsNone(self.assignment.completed_at)
+
+        progress = LessonProgress.objects.get(
+            employee=self.employee_user,
+            lesson=lesson_1,
+        )
+        self.assertEqual(progress.status, "not_done")
+        self.assertIsNone(progress.completed_at)
+
+    def test_one_lesson_course_goes_directly_to_completed(self):
+        single_course = Course.objects.create(
+            title="Single Lesson Course",
+            description="One lesson only",
+            status="published",
+        )
+
+        single_lesson = Lesson.objects.create(
+            course=single_course,
+            title="Only Lesson",
+            objective="Only objective",
+            order=1,
+        )
+
+        single_assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=single_course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+
+        response = self.client.post(
+            f"/api/courses/{single_course.id}/lessons/{single_lesson.id}/complete/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        single_assignment.refresh_from_db()
+        self.assertEqual(single_assignment.progress_status, "completed")
+        self.assertIsNotNone(single_assignment.started_at)
+        self.assertIsNotNone(single_assignment.completed_at)
+
+    def test_one_lesson_course_toggle_back_to_not_started(self):
+        single_course = Course.objects.create(
+            title="Single Lesson Course",
+            description="One lesson only",
+            status="published",
+        )
+
+        single_lesson = Lesson.objects.create(
+            course=single_course,
+            title="Only Lesson",
+            objective="Only objective",
+            order=1,
+        )
+
+        single_assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=single_course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+
+        self.client.post(f"/api/courses/{single_course.id}/lessons/{single_lesson.id}/complete/")
+        response = self.client.post(f"/api/courses/{single_course.id}/lessons/{single_lesson.id}/complete/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        single_assignment.refresh_from_db()
+        self.assertEqual(single_assignment.progress_status, "not_started")
+        self.assertIsNone(single_assignment.started_at)
+        self.assertIsNone(single_assignment.completed_at)
+
+    def test_unassigned_employee_cannot_complete_lesson(self):
+        lesson_1 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 1",
+            objective="Objective 1",
+            order=1,
+        )
+
+        self.assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=self.course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.other_employee_token}")
+
+        response = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/{lesson_1.id}/complete/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_cannot_complete_lesson(self):
+        lesson_1 = Lesson.objects.create(
+        course=self.course,
+        title="Lesson 1",
+        objective="Objective 1",
+        order=1,
+    )
+
+        self.assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=self.course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+
+        response = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/{lesson_1.id}/complete/"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_completed_lessons_are_returned_in_assigned_courses_endpoint(self):
+        lesson_1 = Lesson.objects.create(
+        course=self.course,
+        title="Lesson 1",
+        objective="Objective 1",
+        order=1,
+        )
+        
+        lesson_2 = Lesson.objects.create(
+            course=self.course,
+            title="Lesson 2",
+            objective="Objective 2",
+            order=2,
+        )
+
+        self.assignment = CourseAssignment.objects.create(
+            employee=self.employee_user,
+            course=self.course,
+            progress_status="not_started",
+            is_active=True,
+        )
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")
+
+        self.client.post(f"/api/courses/{self.course.id}/lessons/{lesson_1.id}/complete/")
+
+        response = self.client.get("/api/employee/assigned-courses/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+        course_data = response.data[0]
+        self.assertEqual(course_data["course_id"], self.course.id)
+        self.assertEqual(course_data["total_lessons"], 2)
+        self.assertEqual(course_data["done_lessons"], 1)
+        self.assertEqual(course_data["progress_percentage"], 50)
+        self.assertEqual(course_data["progress_status"], "in_progress")
