@@ -32,9 +32,14 @@ class LessonAPITests(TestCase):
 
     def test_admin_can_create_lesson(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Editable",
+            status="draft",
+        )
 
         response = self.client.post(
-                f"/api/courses/{self.course.id}/lessons/",
+                f"/api/courses/{draft_course.id}/lessons/",
                 {
                     "title": "Introduction",
                     "objective": "Understand the course structure",
@@ -48,20 +53,25 @@ class LessonAPITests(TestCase):
         self.assertEqual(Lesson.objects.count(), 1)
 
         lesson = Lesson.objects.get()
-        self.assertEqual(lesson.course, self.course)
+        self.assertEqual(lesson.course, draft_course)
     
     def test_admin_can_update_lesson(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Editable",
+            status="draft",
+        )
 
         lesson = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Old Title",
             objective="Old objective",
             order=1,
         )
 
         response = self.client.patch(
-            f"/api/courses/{self.course.id}/lessons/{lesson.id}/",
+            f"/api/courses/{draft_course.id}/lessons/{lesson.id}/",
             {
                 "title": "Updated Title",
                 "objective": "Updated objective",
@@ -78,16 +88,21 @@ class LessonAPITests(TestCase):
     
     def test_admin_can_delete_lesson(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Editable",
+            status="draft",
+        )
 
         lesson = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Lesson to delete",
             objective="Delete objective",
             order=1,
         )
 
         response = self.client.delete(
-            f"/api/courses/{self.course.id}/lessons/{lesson.id}/"
+            f"/api/courses/{draft_course.id}/lessons/{lesson.id}/"
         )
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -150,28 +165,33 @@ class LessonAPITests(TestCase):
 
     def test_admin_can_reorder_lessons(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+        draft_course = Course.objects.create(
+            title="Draft Course",
+            description="Editable",
+            status="draft",
+        )
 
         lesson_one = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Lesson One",
             objective="First",
             order=1,
         )
         lesson_two = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Lesson Two",
             objective="Second",
             order=2,
         )
         lesson_three = Lesson.objects.create(
-            course=self.course,
+            course=draft_course,
             title="Lesson Three",
             objective="Third",
             order=3,
         )
 
         response = self.client.patch(
-            f"/api/courses/{self.course.id}/lessons/reorder/",
+            f"/api/courses/{draft_course.id}/lessons/reorder/",
             {
                 "lesson_ids": [lesson_three.id, lesson_one.id, lesson_two.id],
             },
@@ -193,13 +213,58 @@ class LessonAPITests(TestCase):
         self.assertEqual(lesson_two.order, 3)
 
         list_response = self.client.get(
-        f"/api/courses/{self.course.id}/lessons/")
+        f"/api/courses/{draft_course.id}/lessons/")
 
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
         self.assertEqual(
             [lesson["id"] for lesson in list_response.data],
             [lesson_three.id, lesson_one.id, lesson_two.id],
         )
+
+    def test_admin_cannot_mutate_published_course_lessons(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.admin_token}")
+
+        lesson = Lesson.objects.create(
+            course=self.course,
+            title="Published Lesson",
+            objective="Locked",
+            order=1,
+        )
+
+        create_response = self.client.post(
+            f"/api/courses/{self.course.id}/lessons/",
+            {
+                "title": "New Lesson",
+                "objective": "Should not be created",
+            },
+        )
+
+        update_response = self.client.patch(
+            f"/api/courses/{self.course.id}/lessons/{lesson.id}/",
+            {
+                "title": "Updated Title",
+                "objective": "Updated objective",
+            },
+        )
+
+        reorder_response = self.client.patch(
+            f"/api/courses/{self.course.id}/lessons/reorder/",
+            {"lesson_ids": [lesson.id]},
+            format="json",
+        )
+
+        delete_response = self.client.delete(
+            f"/api/courses/{self.course.id}/lessons/{lesson.id}/"
+        )
+
+        self.assertEqual(create_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(update_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(reorder_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(delete_response.status_code, status.HTTP_409_CONFLICT)
+
+        lesson.refresh_from_db()
+        self.assertEqual(lesson.title, "Published Lesson")
+        self.assertEqual(Lesson.objects.count(), 1)
     
     def test_employee_cannot_reorder_lessons(self):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.employee_token}")

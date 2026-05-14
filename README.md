@@ -572,7 +572,7 @@ Returns employees for admin selection and management.
 </details>
 
 <details>
-<summary><strong>PATCH /api/courses/{course_id}/</strong> - Update Course / Publish Toggle</summary>
+<summary><strong>PATCH /api/courses/{course_id}/</strong> - Update Draft Course</summary>
 
 **Requires:** `role=admin`
 
@@ -580,15 +580,8 @@ Returns employees for admin selection and management.
 
 ```json
 {
-  "status": "published"
-}
-```
-
-To unpublish a course:
-
-```json
-{
-  "status": "draft"
+  "title": "Updated Course Title",
+  "description": "Updated course description"
 }
 ```
 
@@ -599,11 +592,26 @@ To unpublish a course:
   "id": 1,
   "title": "Updated Course Title",
   "description": "Updated course description",
-  "status": "published",
+  "status": "draft",
   "created_at": "2026-04-08T10:00:00Z",
   "updated_at": "2026-04-08T12:00:00Z"
 }
 ```
+
+**Error Response (409 Conflict):**
+
+```json
+{
+  "error": "Published courses are view only."
+}
+```
+
+**Notes:**
+
+- Only `draft` courses can be updated.
+- `published` courses are view-only for MVP.
+- Course status cannot be changed through this endpoint.
+- Use `PATCH /api/courses/{course_id}/publish/` to publish a draft course.
 
 </details>
 
@@ -612,7 +620,35 @@ To unpublish a course:
 
 **Requires:** `role=admin`
 
-Sets the course status to `published`.
+Publishes a draft course.
+
+**Notes:**
+
+- Course status transition is one-way for MVP: `draft` -> `published`.
+- Published courses cannot be reverted back to `draft`.
+- Published courses remain view-only.
+
+</details>
+
+<details>
+<summary><strong>DELETE /api/courses/{course_id}/</strong> - Delete Draft Course</summary>
+
+**Requires:** `role=admin`
+
+**Response:** `204 No Content`
+
+**Error Response (409 Conflict):**
+
+```json
+{
+  "error": "Published courses are protected from deletion."
+}
+```
+
+**Notes:**
+
+- Only `draft` courses can be deleted.
+- `published` courses are protected from deletion.
 
 </details>
 
@@ -758,6 +794,8 @@ Last lesson:
 
 - `order` is assigned automatically.
 - New lessons are added to the end of the course.
+- Only `draft` courses can have lessons created.
+- Published courses are view-only and return `409 Conflict`.
 
 </details>
 
@@ -775,6 +813,11 @@ Last lesson:
 }
 ```
 
+**Notes:**
+
+- Only lessons in `draft` courses can be updated.
+- Published courses are view-only and return `409 Conflict`.
+
 </details>
 
 <details>
@@ -783,6 +826,11 @@ Last lesson:
 **Requires:** `role=admin`
 
 **Response:** `204 No Content`
+
+**Notes:**
+
+- Only lessons in `draft` courses can be deleted.
+- Published courses are view-only and return `409 Conflict`.
 
 </details>
 
@@ -820,6 +868,8 @@ Last lesson:
 - Send `lesson_ids` in the desired display order.
 - Duplicate lesson IDs are not allowed.
 - All lesson IDs must belong to the selected course.
+- Only lessons in `draft` courses can be reordered.
+- Published courses are view-only and return `409 Conflict`.
 
 </details>
 
@@ -835,7 +885,7 @@ Last lesson:
 **Notes:**
 
 - Admin users can view materials for any lesson.
-- Employee users can only view materials for assigned courses.
+- Employee users can only view materials for assigned published courses.
 
 </details>
 
@@ -845,6 +895,11 @@ Last lesson:
 **Requires:** `role=admin`
 
 Accepts multipart file uploads for supported PDF and audio files.
+
+**Notes:**
+
+- Only lessons in `draft` courses can have file materials uploaded.
+- Published courses are view-only and return `409 Conflict`.
 
 </details>
 
@@ -860,6 +915,11 @@ Accepts multipart file uploads for supported PDF and audio files.
   "text_content": "Lesson notes go here"
 }
 ```
+
+**Notes:**
+
+- Only lessons in `draft` courses can have text materials created.
+- Published courses are view-only and return `409 Conflict`.
 
 </details>
 
@@ -878,7 +938,9 @@ Accepts multipart file uploads for supported PDF and audio files.
 
 **Notes:**
 
-- Only YouTube URLs are supported.
+- Supported video providers: YouTube and Vimeo.
+- Only lessons in `draft` courses can have video materials created.
+- Published courses are view-only and return `409 Conflict`.
 
 </details>
 
@@ -886,6 +948,11 @@ Accepts multipart file uploads for supported PDF and audio files.
 <summary><strong>DELETE /api/lessons/{lesson_id}/materials/{material_id}/</strong> - Delete Material</summary>
 
 **Requires:** `role=admin`
+
+**Notes:**
+
+- Only materials in `draft` courses can be deleted.
+- Published courses are view-only and return `409 Conflict`.
 
 </details>
 

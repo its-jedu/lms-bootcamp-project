@@ -57,8 +57,11 @@ class Material(models.Model):
     )
     
     material_type = models.CharField(max_length=20, choices=MATERIAL_TYPE_CHOICES)
-    file = models. FileField(upload_to="course_material/")
-    filename = models.CharField(max_length=255)
+    # file = models. FileField(upload_to="course_material/")
+    filename = models.CharField(max_length=255, blank=True, default="")
+    storage_provider = models.CharField(max_length=50, default="dropbox")
+    provider_file_id = models.CharField(max_length=255, blank=True, default="")
+    provider_path = models.CharField(max_length=500, blank=True, default="")
     text_content = models.TextField(blank=True, default="")
     video_url = models.URLField(blank=True, default="")
     uploaded_at = models.DateTimeField(auto_now_add=True)

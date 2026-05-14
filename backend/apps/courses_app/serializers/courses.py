@@ -15,9 +15,16 @@ class CourseSerializer(serializers.ModelSerializer):
 class CourseUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = ["title", "description", "status"]
+        fields = ["title", "description"]
     
     def validate_title(self, value):
         if not value or not value.strip():
             raise serializers.ValidationError("Title cannot be empty")
         return value.strip()
+    
+    def validate(self, attrs):
+        if "status" in self.initial_data:
+            raise serializers.ValidationError(
+                {"status": "Use the publish endpoint to publish draft courses."}
+            )
+        return attrs

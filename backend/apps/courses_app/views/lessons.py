@@ -33,6 +33,15 @@ class LessonViewSet(viewsets.ViewSet):
     def _ordered_lessons(self, course):
         return course.lessons.order_by("order", "created_at", "id")
     
+    # Published courses are view only, including lesson changes
+    def _ensure_draft_course(self, course):
+        if course.status == "published":
+            return Response(
+                {"error": "Published courses are view only."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return None
+    
     def list(self, request, course_id=None):
         course = self._get_viewable_course(request, course_id)
         serializer = LessonSerializer(self._ordered_lessons(course), many=True)
@@ -70,6 +79,10 @@ class LessonViewSet(viewsets.ViewSet):
     def create(self, request, course_id=None):
         course = get_object_or_404(Course, pk=course_id)
 
+        locked_response = self._ensure_draft_course(course)
+        if locked_response:
+            return locked_response
+
         serializer = LessonSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
@@ -79,6 +92,11 @@ class LessonViewSet(viewsets.ViewSet):
 
     def partial_update(self, request, course_id=None, pk=None):
         course = get_object_or_404(Course, pk=course_id)
+
+        locked_response = self._ensure_draft_course(course)
+        if locked_response:
+            return locked_response
+
         lesson = get_object_or_404(Lesson, pk=pk, course=course)
 
         serializer = LessonSerializer(lesson, data=request.data, partial=True)
@@ -89,6 +107,11 @@ class LessonViewSet(viewsets.ViewSet):
 
     def reorder(self, request, course_id=None):
         course = get_object_or_404(Course, pk=course_id)
+        
+        locked_response = self._ensure_draft_course(course)
+        if locked_response:
+            return locked_response
+
         lesson_ids = request.data.get("lesson_ids")
 
         if not isinstance(lesson_ids, list) or not lesson_ids:
@@ -131,6 +154,11 @@ class LessonViewSet(viewsets.ViewSet):
     
     def destroy(self, request, course_id=None, pk=None):
         course = get_object_or_404(Course, pk=course_id)
+
+        locked_response = self._ensure_draft_course(course)
+        if locked_response:
+            return locked_response
+
         lesson = get_object_or_404(Lesson, pk=pk, course=course)
         lesson.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

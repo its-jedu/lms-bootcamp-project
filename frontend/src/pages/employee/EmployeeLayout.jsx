@@ -22,17 +22,18 @@ export default function EmployeeLayout() {
 
   return (
     <div className="min-h-screen bg-[#F2F2F0]">
-      
       {/* Navbar */}
       <div className="px-8 py-3">
         <div className="flex items-center justify-between rounded-full bg-white px-5 py-[10px]">
-          
           <div className="text-lg font-extrabold text-[#212429]">
-             <img src="./Dark-variation-logo.png" alt="Skillminds Logo" className="h-10 w-100%" />
+            <img
+              src="./Dark-variation-logo.png"
+              alt="Skillminds Logo"
+              className="h-10 w-100%"
+            />
           </div>
 
           <div className="flex gap-2 rounded-full bg-[#EEF2F5] p-1">
-            
             <NavLink
               to="/employee/dashboard"
               end
@@ -40,7 +41,7 @@ export default function EmployeeLayout() {
                 `rounded-full px-[22px] py-2 text-sm font-semibold ${
                   isActive
                     ? "bg-[#1F4842] text-white"
-                    : "bg-[#D8F3CA] text-[#212429]"
+                    : "bg-[#b9f27c] text-[#1f4845]"
                 }`
               }
             >
@@ -53,13 +54,12 @@ export default function EmployeeLayout() {
                 `rounded-full px-[22px] py-2 text-sm font-semibold ${
                   isActive
                     ? "bg-[#1F4842] text-white"
-                    : "bg-[#D8F3CA] text-[#212429]"
+                    : "bg-[#b9f27c] text-[#1f4845]"
                 }`
               }
             >
               My Course
             </NavLink>
-
           </div>
 
           <div className="flex items-center gap-4">
@@ -68,7 +68,12 @@ export default function EmployeeLayout() {
 
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#D8F3CA] text-sm font-bold text-[#1F4842]">
               <button onClick={() => setOpen(!open)}>
-                {user?.email ? user.email[0].toUpperCase() : "U"}
+                {(
+                  user?.first_name?.[0] ||
+                  user?.last_name?.[0] ||
+                  user?.email?.[0] ||
+                  "U"
+                ).toUpperCase()}
               </button>
             </div>
             {open && (
