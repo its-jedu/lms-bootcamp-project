@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Play, RotateCcw } from "lucide-react";
 import CourseCard from "./CourseCard";
 import cachedApi from "../../api/cachedApi";
+import env from "../../config/env";
 
 export default function EmployeeOverview() {
   const navigate = useNavigate();
@@ -11,76 +12,48 @@ export default function EmployeeOverview() {
   const [courseData, setCourseData] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchAssignedCourses = async () => {
+    const token = localStorage.getItem("access_token");
+
+    const response = await fetch(`${env.API_URL}/api/employee/assigned-courses/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch assigned courses.");
+    }
+
+    const data = await response.json();
+
+    const processedCourses = data.map((course) => ({
+      id: course.course_id,
+      title: course.title,
+      description: course.description,
+      status: course.progress_status,
+      progress: course.progress_percentage,
+      numberOfLessons: course.total_lessons,
+      completedLessons: course.done_lessons,
+      assignmentId: course.assignment_id,
+      assignedAt: course.assigned_at,
+      startedAt: course.started_at,
+      updatedAt: course.completed_at || course.started_at || course.assigned_at,
+    }));
+
+    setCourseData(processedCourses);
+  };
+
   useEffect(() => {
     (async () => {
       try {
-        const [profileResponse, coursesResponse] = await Promise.all([
-          cachedApi.get("api/employee/profile/", {
-            ttl: 10 * 60 * 1000,
-            cacheKey: "employee_profile",
-          }),
-          cachedApi.get("api/employee/assigned-courses/", {
-            ttl: 5 * 60 * 1000,
-            cacheKey: "employee_assigned_courses",
-          }),
-        ]);
-        
-        setEmployeeProfile(profileResponse.data);
-        
-        // Process courses with enhanced data
-        const processedCourses = await Promise.all(
-          coursesResponse.data.map(async (course) => {
-            // Fetch lessons for each course to get lesson count
-            try {
-              const lessonsResponse = await cachedApi.get(
-                `api/courses/${course.course_id}/lessons/`,
-                {
-                  ttl: 10 * 60 * 1000,
-                  cacheKey: `course_lessons_${course.course_id}`,
-                }
-              );
-              const lessons = lessonsResponse.data;
-              const completedLessons = course.progress_status === "completed" 
-                ? lessons.length 
-                : course.progress_status === "in_progress" 
-                  ? Math.floor(Math.random() * (lessons.length - 1)) + 1 
-                  : 0;
-              
-              // Calculate progress based on completed lessons
-              const progress = course.progress_status === "completed" 
-                ? 100 
-                : course.progress_status === "in_progress" 
-                  ? Math.round((completedLessons / lessons.length) * 100) 
-                  : 0;
+        const profileResponse = await cachedApi.get("api/employee/profile/", {
+          ttl: 10 * 60 * 1000,
+          cacheKey: "employee_profile",
+        });
 
-              return {
-                id: course.course_id,
-                title: course.title,
-                description: course.description,
-                status: course.progress_status,
-                progress: progress,
-                numberOfLessons: lessons.length,
-                completedLessons: completedLessons,
-                assignmentId: course.assignment_id,
-              };
-            } catch (error) {
-              // Fallback if lessons endpoint fails
-              return {
-                id: course.course_id,
-                title: course.title,
-                description: course.description,
-                status: course.progress_status,
-                progress: course.progress_status === "completed" ? 100 : 
-                         course.progress_status === "in_progress" ? 38 : 0,
-                numberOfLessons: 0,
-                completedLessons: course.progress_status === "in_progress" ? 2 : 0,
-                assignmentId: course.assignment_id,
-              };
-            }
-          })
-        );
-        
-        setCourseData(processedCourses);
+        setEmployeeProfile(profileResponse.data);
+        await fetchAssignedCourses();
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
@@ -120,20 +93,28 @@ export default function EmployeeOverview() {
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  const completed = courseData?.filter((c) => c.progress === 100).length;
-  const inProgress = courseData?.filter((c) => c.progress > 0 && c.progress < 100).length;
-  const notStarted = courseData?.length - completed - inProgress;
-  
-  // Get the first in-progress course, or the first not-started course
-  const priorityCourse = courseData?.find((c) => c.status === "in_progress") || 
-                        courseData?.find((c) => c.status === "not_started") ||
-                        courseData?.[0];
+  const completed = courseData?.filter((c) => c.status === "completed").length || 0;
+  const inProgress = courseData?.filter((c) => c.status === "in_progress").length || 0;
+  const notStarted = courseData?.filter((c) => c.status === "not_started").length || 0;
+
+  const priorityCourse =
+    courseData?.find((c) => c.status === "in_progress") ||
+    courseData?.find((c) => c.status === "not_started") ||
+    courseData?.find((c) => c.status === "completed") ||
+    courseData?.[0];
 
   const hasStartedPriority = priorityCourse?.status === "in_progress";
-  const currentLesson = hasStartedPriority 
-    ? (priorityCourse?.completedLessons || 0) + 1 
-    : 1;
-  
+
+  const currentLesson =
+    priorityCourse?.status === "completed"
+      ? priorityCourse.numberOfLessons || 1
+      : hasStartedPriority
+        ? Math.min(
+            (priorityCourse?.completedLessons || 0) + 1,
+            priorityCourse?.numberOfLessons || 1
+          )
+        : 1;
+
   const hasNoCourses = courseData.length === 0;
 
   return (
@@ -159,7 +140,10 @@ export default function EmployeeOverview() {
       </div>
 
       {priorityCourse && (
-        <div className="mb-6 flex justify-between items-center rounded-2xl bg-white p-6 shadow-md w-full" style={{ minHeight: "96px" }}>
+        <div
+          className="mb-6 flex justify-between items-center rounded-2xl bg-white p-6 shadow-md w-full"
+          style={{ minHeight: "96px" }}
+        >
           <div className="flex-1">
             <p className="text-[20px] font-normal text-[#1F4842]">
               {hasStartedPriority ? "Continue where you left off" : "Let's begin with"}

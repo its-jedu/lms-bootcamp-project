@@ -76,58 +76,19 @@ export default function EmployeeCourses() {
         });
         
         // Process courses with enhanced data
-        const processedCourses = await Promise.all(
-          coursesResponse.data.map(async (course) => {
-            try {
-              const lessonsResponse = await cachedApi.get(
-                `api/courses/${course.course_id}/lessons/`,
-                {
-                  ttl: 10 * 60 * 1000,
-                  cacheKey: `course_lessons_${course.course_id}`,
-                }
-              );
-              const lessons = lessonsResponse.data;
-              const completedLessons = course.progress_status === "completed" 
-                ? lessons.length 
-                : course.progress_status === "in_progress" 
-                  ? Math.floor(Math.random() * (lessons.length - 1)) + 1 
-                  : 0;
-              
-              const progress = course.progress_status === "completed" 
-                ? 100 
-                : course.progress_status === "in_progress" 
-                  ? Math.round((completedLessons / lessons.length) * 100) 
-                  : 0;
-
-              return {
-                id: course.course_id,
-                title: course.title,
-                description: course.description,
-                status: course.progress_status,
-                progress: progress,
-                numberOfLessons: lessons.length,
-                completedLessons: completedLessons,
-                assignmentId: course.assignment_id,
-                assigned_at: course.assigned_at,
-                updatedAt: course.assigned_at,
-              };
-            } catch (error) {
-              return {
-                id: course.course_id,
-                title: course.title,
-                description: course.description,
-                status: course.progress_status,
-                progress: course.progress_status === "completed" ? 100 : 
-                         course.progress_status === "in_progress" ? 38 : 0,
-                numberOfLessons: 0,
-                completedLessons: course.progress_status === "in_progress" ? 2 : 0,
-                assignmentId: course.assignment_id,
-                assigned_at: course.assigned_at,
-                updatedAt: course.assigned_at,
-              };
-            }
-          })
-        );
+        const processedCourses = coursesResponse.data.map((course) => ({
+          id: course.course_id,
+          title: course.title,
+          description: course.description,
+          status: course.progress_status,
+          progress: course.progress_percentage,
+          numberOfLessons: course.total_lessons,
+          completedLessons: course.done_lessons,
+          assignmentId: course.assignment_id,
+          assignedAt: course.assigned_at,
+          startedAt: course.started_at,
+          updatedAt: course.completed_at || course.started_at || course.assigned_at,
+        }));
         
         setCourseData(processedCourses);
       } catch (error) {

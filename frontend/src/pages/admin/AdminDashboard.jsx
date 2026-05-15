@@ -50,7 +50,7 @@ export default function AdminDashboard() {
   }, []);
 
   const handleViewCourse = (courseId) =>
-    navigate(`../create-course?edit=${courseId}`);
+    navigate(`../courses/create-course?edit=${courseId}`);
 
   if (loading) {
     return (
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
 
               <div className="w-[312px] h-[308px] overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
                 <div className="p-4 flex flex-col items-center justify-center h-full">
-                  <Link to="../create-course" className="mb-4">
+                  <Link to="../courses/create-course" className="mb-4">
                     <div className="w-[70px] h-[70px] rounded-full bg-[#B8F699] flex items-center justify-center">
                       <div className="w-4 h-4 rounded-full bg-[#1f4842] flex items-center justify-center">
                         <Plus className="w-3 h-3 text-white" strokeWidth={3} />

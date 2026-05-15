@@ -27,6 +27,10 @@ lesson_reorder = LessonViewSet.as_view(
     }
 )
 
+lesson_complete = LessonViewSet.as_view({
+    "post": "complete",
+})
+
 lesson_materials = MaterialViewSet.as_view({
     "get": "list",
 })
@@ -65,6 +69,7 @@ urlpatterns = [
     path("courses/<int:course_id>/lessons/",lesson_list,name="course-lessons",),
     path("courses/<int:course_id>/lessons/reorder/",lesson_reorder,name="course-lessons-reorder",),
     path("courses/<int:course_id>/lessons/<int:pk>/",lesson_detail, name="course-lesson-detail",),
+    path("courses/<int:course_id>/lessons/<int:pk>/complete/", lesson_complete, name="course-lesson-complete"),
     
     path("lessons/<int:lesson_id>/materials/", lesson_materials, name="material-list"),
     path("lessons/<int:lesson_id>/materials/file/", lesson_material_file, name="material-create-file"),
