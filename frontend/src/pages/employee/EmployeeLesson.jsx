@@ -40,11 +40,31 @@ const getAccessToken = () => {
   return localStorage.getItem("access_token");
 };
 
-const handleDownload = (material) => {
-  const token = getAccessToken();
-  const downloadUrl = `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`;
-  
-  window.open(downloadUrl, '_blank');
+const handleDownload = async (material) => {
+  try {
+    const token = getAccessToken();
+    const response = await fetch(
+      `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.download_url) {
+      throw new Error("No download URL received");
+    }
+
+    window.open(data.download_url, '_blank');
+  } catch (error) {
+    console.error('Download error:', error);
+    alert("Unable to download file. Please try again.");
+  }
 };
 
 const getAudioSource = async (material) => {
@@ -54,7 +74,6 @@ const getAudioSource = async (material) => {
       `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`,
       {
         headers: { Authorization: `Bearer ${token}` },
-        redirect: 'follow'
       }
     );
 
@@ -62,7 +81,13 @@ const getAudioSource = async (material) => {
       throw new Error(`Failed to fetch audio: ${response.status}`);
     }
 
-    return response.url;
+    const data = await response.json();
+    
+    if (!data.download_url) {
+      throw new Error("No audio URL received");
+    }
+
+    return data.download_url;
   } catch (error) {
     console.error("Audio load error:", error);
     throw error;
