@@ -1,5 +1,3 @@
-// src/pages/employee/EmployeeLesson.jsx
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -53,7 +51,7 @@ const handleDownload = async (material) => {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get download URL: ${response.status}`);
+      throw new Error(`Failed: ${response.status}`);
     }
 
     const data = await response.json();
@@ -62,7 +60,6 @@ const handleDownload = async (material) => {
       throw new Error("No download URL received");
     }
 
-    // Open in new tab - Cloudinary blocks iframe embedding
     window.open(data.download_url, '_blank');
   } catch (error) {
     console.error('Download error:', error);
@@ -81,7 +78,7 @@ const getAudioSource = async (material) => {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch audio link: ${response.status}`);
+      throw new Error(`Failed to fetch audio: ${response.status}`);
     }
 
     const data = await response.json();

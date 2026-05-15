@@ -12,7 +12,6 @@ export default function AdminTopNav() {
 
   const menuItems = [
     { name: "Dashboard", path: "dashboard" },
-    { name: "Create Course", path: "create-course" },
     { name: "Courses", path: "courses" },
     { name: "Manage Employees", path: "manage-employees" },
     { name: "Assign Course", path: "assign-course" },
@@ -149,8 +148,6 @@ export default function AdminTopNav() {
                 role="menu"
                 className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/10"
               >
-             
-               
                 <div className="h-px bg-gray-100" />
                 <button
                   role="menuitem"
