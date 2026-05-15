@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from apps.admin_app.permissions import IsAdmin
 from apps.courses_app.models import Course, CourseAssignment, Lesson, LessonProgress
-from apps.courses_app.serializers.lessons import LessonSerializer, LessonProgressSerializer
+from apps.courses_app.serializers.lessons import LessonSerializer
 
 
 class LessonViewSet(viewsets.ViewSet):

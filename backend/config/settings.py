@@ -217,5 +217,5 @@ SIMPLE_JWT = {
 }
 
 # Dropbox settings (kept for reference, not used)
-DROPBOX_ACCESS_TOKEN = os.getenv("DROPBOX_ACCESS_TOKEN", "")
-DROPBOX_APP_FOLDER = os.getenv("DROPBOX_APP_FOLDER", "/materials")
+# DROPBOX_ACCESS_TOKEN = os.getenv("DROPBOX_ACCESS_TOKEN", "")
+# DROPBOX_APP_FOLDER = os.getenv("DROPBOX_APP_FOLDER", "/materials")

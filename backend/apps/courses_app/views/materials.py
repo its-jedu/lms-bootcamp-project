@@ -112,20 +112,9 @@ class MaterialViewSet(viewsets.ViewSet):
             return Response({"error": "Not a downloadable file"}, status=status.HTTP_400_BAD_REQUEST)
         
         if not material.provider_path:
-            return Response(
-                {"error": "No downloadable file reference available"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "No downloadable file reference available"}, status=status.HTTP_404_NOT_FOUND)
         
-        storage = CloudinaryStorageService()
-        try:
-            download_url = storage.get_download_url(material.provider_path)
-            return Response({"download_url": download_url})
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to generate download link: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        return Response({"download_url": material.provider_path})
 
     def create_text(self, request, lesson_id=None): 
         lesson = get_object_or_404(Lesson, id=lesson_id)
