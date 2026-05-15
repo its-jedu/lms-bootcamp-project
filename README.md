@@ -564,6 +564,19 @@ Returns employees for admin selection and management.
 
 **Requires:** authenticated user
 
+**Response (200 OK):**
+
+```json
+{
+  "id": 1,
+  "title": "Python Basics",
+  "description": "Learn Python programming",
+  "status": "draft",
+  "created_at": "2026-04-08T10:00:00Z",
+  "updated_at": "2026-04-08T10:00:00Z"
+}
+```
+
 **Notes:**
 
 - Admin users can retrieve draft or published courses.
