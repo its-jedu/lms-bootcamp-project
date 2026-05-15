@@ -1,5 +1,3 @@
-// src/pages/employee/EmployeeLesson.jsx
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -42,32 +40,11 @@ const getAccessToken = () => {
   return localStorage.getItem("access_token");
 };
 
-const handleDownload = async (material) => {
-  try {
-    const token = getAccessToken();
-    const response = await fetch(
-      `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to get download URL: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.download_url) {
-      throw new Error("No download URL received");
-    }
-
-    // Open in new tab - Cloudinary blocks iframe embedding
-    window.open(data.download_url, '_blank');
-  } catch (error) {
-    console.error('Download error:', error);
-    alert("Unable to download file. Please try again.");
-  }
+const handleDownload = (material) => {
+  const token = getAccessToken();
+  const downloadUrl = `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`;
+  
+  window.open(downloadUrl, '_blank');
 };
 
 const getAudioSource = async (material) => {
@@ -77,20 +54,15 @@ const getAudioSource = async (material) => {
       `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`,
       {
         headers: { Authorization: `Bearer ${token}` },
+        redirect: 'follow'
       }
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch audio link: ${response.status}`);
+      throw new Error(`Failed to fetch audio: ${response.status}`);
     }
 
-    const data = await response.json();
-    
-    if (!data.download_url) {
-      throw new Error("No audio URL received");
-    }
-
-    return data.download_url;
+    return response.url;
   } catch (error) {
     console.error("Audio load error:", error);
     throw error;
