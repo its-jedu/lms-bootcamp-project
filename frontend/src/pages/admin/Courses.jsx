@@ -19,7 +19,7 @@ function Courses() {
       }
     };
     fetchCourses();
-  }, [courses]);
+  }, []);
 
   const handlePublishCourse = async (courseId) => {
     try {
@@ -65,7 +65,10 @@ function Courses() {
           </p>
         </div>
         <div className="flex justify-end">
-          <button className="text-white font-bold bg-[#1f4842] p-2 rounded-md" onClick={navigate("create-course")}>
+          <button
+            className="text-white font-bold bg-[#1f4842] p-2 rounded-md"
+            onClick={() => navigate("./create-course")}
+          >
             <span className="text-2xl">+</span> Create course
           </button>
         </div>
@@ -121,7 +124,7 @@ function Courses() {
                       <>
                         <button
                           onClick={() =>
-                            navigate(`../create-course/?edit=${course.id}`)
+                            navigate(`./create-course/?edit=${course.id}`)
                           }
                           className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-4 h-[28px] rounded-[4px] mr-2"
                         >
@@ -150,7 +153,10 @@ function Courses() {
                       </>
                     )}
                     {course.status === "published" && (
-                      <button className="bg-[#e5ebff] hover:bg-[#d0d9ff] text-[#5f6ea7] text-[10px] px-4 h-[28px] rounded-[4px]">
+                      <button
+                        className="bg-[#e5ebff] hover:bg-[#d0d9ff] text-[#5f6ea7] text-[10px] px-4 h-[28px] rounded-[4px]"
+                        onClick={() => navigate(`./create-course/?edit=${course.id}`)}
+                      >
                         View course
                       </button>
                     )}
