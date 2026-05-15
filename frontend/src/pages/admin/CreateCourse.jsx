@@ -372,7 +372,7 @@ export default function CreateCourse() {
         <div className="max-w-[680px] mx-auto">
           {/* BACK */}
           <button
-            onClick={() => navigate("/admin/dashboard")}
+            onClick={() => navigate("/admin/courses")}
             className="flex items-center gap-1 text-[13px] text-[#202020] mb-8"
           >
             <ChevronLeft className="w-4 h-4" />
