@@ -37,17 +37,3 @@ class LessonSerializer(serializers.ModelSerializer):
             status="done",
         ).exists()
     
-class LessonProgressSerializer(serializers.ModelSerializer):
-    lesson_id = serializers.IntegerField(source="lesson.id", read_only=True)
-
-    class Meta:
-        model = LessonProgress
-        fields = [
-            "id",
-            "lesson_id",
-            "status",
-            "started_at",
-            "completed_at",
-            "updated_at",
-        ]
-        read_only_fields = fields
