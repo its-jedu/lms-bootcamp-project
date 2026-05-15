@@ -35,6 +35,8 @@ class CourseAssignmentCreateSerializer(serializers.Serializer):
 
 # For admin assignment response
 class CourseAssignmentSerializer(serializers.ModelSerializer):
+    employee_first_name = serializers.CharField(source="employee.first_name", read_only=True)
+    employee_last_name = serializers.CharField(source="employee.last_name", read_only=True)
     employee_id = serializers.IntegerField(source="employee.id", read_only=True)
     employee_email = serializers.EmailField(source="employee.email", read_only=True)
     course_id = serializers.IntegerField(source="course.id", read_only=True)
@@ -45,6 +47,8 @@ class CourseAssignmentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "employee_id",
+            "employee_first_name",
+            "employee_last_name",
             "employee_email",
             "course_id",
             "course_title",

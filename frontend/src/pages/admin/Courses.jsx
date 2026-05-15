@@ -1,12 +1,12 @@
 import React from "react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axiosInstance from "@/api/axiosInstance";
 
 function Courses() {
   const [courses, setCourses] = useState([]);
   const navigate = useNavigate();
-
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -14,9 +14,10 @@ function Courses() {
         setCourses(await response.data);
       } catch (error) {
         console.error("Error fetching courses:", error);
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchCourses();
   }, [courses]);
 
@@ -33,7 +34,7 @@ function Courses() {
       console.error("Error publishing course:", error);
     }
   };
-  if (!courses) {
+  if (loading) {
     return (
       <div className="flex-1 overflow-auto bg-[#f6f7f7] flex items-center justify-center">
         <p className="text-[11px] text-[#999999]">Loading....</p>
@@ -50,105 +51,116 @@ function Courses() {
   }
 
   return (
-    <div className="bg-white border border-[#e5e5e5] mt-6">
-      {/* HEADER */}
-      <div className="px-5 py-4 border-b border-[#ececec]">
-        <h2 className="text-[32px] font-bold text-[#1f4842]">Course</h2>
+    <div className="w-[70%] mx-auto flex flex-col justify-center">
+      <Link to="/admin/dashboard">
+        <div className="mt-2">&lt; Back</div>
+      </Link>
+      <div className="bg-white border border-[#e5e5e5] mt-3">
+        {/* HEADER */}
+        <div className="px-5 py-4 border-b border-[#ececec]">
+          <h2 className="text-[32px] font-bold text-[#1f4842]">Course</h2>
 
-        <p className="text-[11px] text-[#7d7d7d] mt-[4px]">
-          view all your draft and published courses
-        </p>
-      </div>
+          <p className="text-[11px] text-[#7d7d7d] mt-[4px]">
+            View all your draft and published courses
+          </p>
+        </div>
+        <div className="flex justify-end">
+          <button className="text-white font-bold bg-[#1f4842] p-2 rounded-md" onClick={navigate("create-course")}>
+            <span className="text-2xl">+</span> Create course
+          </button>
+        </div>
+        {/* TABLE */}
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-[#ececec]">
+              <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
+                Course Title
+              </th>
 
-      {/* TABLE */}
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-[#ececec]">
-            <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
-              Course Title
-            </th>
+              <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
+                Status
+              </th>
 
-            <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
-              Status
-            </th>
-
-            <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
-              Action
-            </th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {courses.length === 0 ? (
-            <tr>
-              <td
-                colSpan={3}
-                className="px-5 py-6 text-center text-[11px] text-[#999999]"
-              >
-                No courses yet
-              </td>
+              <th className="text-left px-5 py-3 text-[11px] font-medium text-[#666666]">
+                Action
+              </th>
             </tr>
-          ) : (
-            courses.map((course) => (
-              <tr key={course.id} className="border-b border-[#f1f1f1]">
-                <td className="px-5 py-4 text-[11px] text-[#444444]">
-                  {course.title}
-                </td>
+          </thead>
 
-                <td className="px-5 py-4">
-                  <span
-                    className={`text-[10px] px-2 py-[3px] rounded-full ${
-                      course.status === "published"
-                        ? "bg-[#d8f0d9] text-[#397b45]"
-                        : "bg-[#e5ebff] text-[#5f6ea7]"
-                    }`}
-                  >
-                    {course.status === "published" ? "Published" : "Draft"}
-                  </span>
-                </td>
-
-                <td className="px-5 py-4">
-                  {course.status === "draft" && (
-                    <>
-                      <button
-                        onClick={() =>
-                          navigate(`../create-course/?edit=${course.id}`)
-                        }
-                        className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-4 h-[28px] rounded-[4px] mr-2"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handlePublishCourse(course.id)}
-                        className="bg-[#1f4842] hover:bg-[#173a35] text-white text-[10px] px-4 h-[28px] rounded-[4px]"
-                      >
-                        Publish
-                      </button>
-                      <button
-                        onClick={() =>
-                          axiosInstance.delete(`api/courses/${course.id}/`).then(() => {
-                            setCourses((prevCourses) =>
-                              prevCourses.filter((c) => c.id !== course.id),
-                            );
-                          })
-                        }
-                        className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-4 h-[28px] rounded-[4px] mr-2"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                  {course.status === "published" && (
-                    <button className="bg-[#e5ebff] hover:bg-[#d0d9ff] text-[#5f6ea7] text-[10px] px-4 h-[28px] rounded-[4px]">
-                      View course
-                    </button>
-                  )}
+          <tbody>
+            {courses.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={3}
+                  className="px-5 py-6 text-center text-[11px] text-[#999999]"
+                >
+                  No courses yet
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              courses.map((course) => (
+                <tr key={course.id} className="border-b border-[#f1f1f1]">
+                  <td className="px-5 py-4 text-[11px] text-[#444444]">
+                    {course.title}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <span
+                      className={`text-[10px] px-2 py-[3px] rounded-full ${
+                        course.status === "published"
+                          ? "bg-[#d8f0d9] text-[#397b45]"
+                          : "bg-[#e5ebff] text-[#5f6ea7]"
+                      }`}
+                    >
+                      {course.status === "published" ? "Published" : "Draft"}
+                    </span>
+                  </td>
+
+                  <td className="px-5 py-4">
+                    {course.status === "draft" && (
+                      <>
+                        <button
+                          onClick={() =>
+                            navigate(`../create-course/?edit=${course.id}`)
+                          }
+                          className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-4 h-[28px] rounded-[4px] mr-2"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handlePublishCourse(course.id)}
+                          className="bg-[#1f4842] hover:bg-[#173a35] text-white text-[10px] px-4 h-[28px] rounded-[4px]"
+                        >
+                          Publish
+                        </button>
+                        <button
+                          onClick={() =>
+                            axiosInstance
+                              .delete(`api/courses/${course.id}/`)
+                              .then(() => {
+                                setCourses((prevCourses) =>
+                                  prevCourses.filter((c) => c.id !== course.id),
+                                );
+                              })
+                          }
+                          className="bg-red-500 hover:bg-red-600 text-white text-[10px] px-4 h-[28px] rounded-[4px] mr-2"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                    {course.status === "published" && (
+                      <button className="bg-[#e5ebff] hover:bg-[#d0d9ff] text-[#5f6ea7] text-[10px] px-4 h-[28px] rounded-[4px]">
+                        View course
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

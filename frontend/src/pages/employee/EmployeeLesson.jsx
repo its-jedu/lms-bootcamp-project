@@ -36,56 +36,72 @@ function getYouTubeThumbnail(url) {
   return null;
 }
 
-function getFullUrl(path) {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `${env.API_URL}${path}`;
-}
-
-const getMaterialDownloadUrl = (material) => {
-  if (!material?.lesson || !material?.id) return "";
-  return `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`;
-};
-
 const getAccessToken = () => {
   return localStorage.getItem("access_token");
 };
 
-const handleProtectedDownload = async (material) => {
+const handleDownload = async (material) => {
   try {
-    const token = localStorage.getItem("access_token");
-
+    const token = getAccessToken();
     const response = await fetch(
       `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       }
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get download URL: ${response.status}`);
+      throw new Error(`Failed: ${response.status}`);
     }
 
     const data = await response.json();
-    window.location.href = data.download_url;
+    
+    if (!data.download_url) {
+      throw new Error("No download URL received");
+    }
+
+    window.open(data.download_url, '_blank');
   } catch (error) {
-    console.error(error);
-    alert("Unable to download file.");
+    console.error('Download error:', error);
+    alert("Unable to download file. Please try again.");
+  }
+};
+
+const getAudioSource = async (material) => {
+  try {
+    const token = getAccessToken();
+    const response = await fetch(
+      `${env.API_URL}/api/lessons/${material.lesson}/materials/${material.id}/download/`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audio: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.download_url) {
+      throw new Error("No audio URL received");
+    }
+
+    return data.download_url;
+  } catch (error) {
+    console.error("Audio load error:", error);
+    throw error;
   }
 };
 
 const toggleLessonComplete = async (courseId, lessonId) => {
-  const token = localStorage.getItem("access_token");
+  const token = getAccessToken();
 
   const response = await fetch(
     `${env.API_URL}/api/courses/${courseId}/lessons/${lessonId}/complete/`,
     {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     }
   );
 
@@ -98,6 +114,7 @@ const toggleLessonComplete = async (courseId, lessonId) => {
 
 export default function EmployeeLesson() {
   const [audioSrcMap, setAudioSrcMap] = useState({});
+  const [audioLoadingMap, setAudioLoadingMap] = useState({});
   const { courseId } = useParams();
   const navigate = useNavigate();
 
@@ -117,12 +134,10 @@ export default function EmployeeLesson() {
   };
 
   const fetchLessons = async () => {
-    const token = localStorage.getItem("access_token");
+    const token = getAccessToken();
 
     const response = await fetch(`${env.API_URL}/api/courses/${courseId}/lessons/`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) {
@@ -139,7 +154,6 @@ export default function EmployeeLesson() {
 
     setSelectedLesson((prevSelectedLesson) => {
       if (!prevSelectedLesson) return refreshedLessons[0];
-
       return (
         refreshedLessons.find((lesson) => lesson.id === prevSelectedLesson.id) ||
         refreshedLessons[0]
@@ -149,12 +163,10 @@ export default function EmployeeLesson() {
 
   const fetchLessonMaterials = async (lessonId) => {
     try {
-      const token = localStorage.getItem("access_token");
+      const token = getAccessToken();
 
       const response = await fetch(`${env.API_URL}/api/lessons/${lessonId}/materials/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
@@ -171,31 +183,19 @@ export default function EmployeeLesson() {
 
   const loadAudioSource = async (material) => {
     try {
-      if (audioSrcMap[material.id]) return;
+      setAudioLoadingMap(prev => ({ ...prev, [material.id]: true }));
 
-      const token = getAccessToken();
-
-      const response = await fetch(getMaterialDownloadUrl(material), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const rawText = await response.text();
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch audio link: ${response.status}`);
-      }
-
-      const data = JSON.parse(rawText);
-
+      const audioUrl = await getAudioSource(material);
+      
       setAudioSrcMap((prev) => ({
         ...prev,
-        [material.id]: data.download_url,
+        [material.id]: audioUrl,
       }));
     } catch (error) {
       console.error("audio load error:", error);
-      alert("Unable to load audio.");
+      alert("Unable to load audio. Please try again.");
+    } finally {
+      setAudioLoadingMap(prev => ({ ...prev, [material.id]: false }));
     }
   };
 
@@ -229,6 +229,8 @@ export default function EmployeeLesson() {
   useEffect(() => {
     if (selectedLesson) {
       setIsPlaying(false);
+      setAudioSrcMap({});
+      setAudioLoadingMap({});
       fetchLessonMaterials(selectedLesson.id);
     } else {
       setMaterials([]);
@@ -236,30 +238,20 @@ export default function EmployeeLesson() {
   }, [selectedLesson]);
 
   const completedLessons = lessons.filter((lesson) => lesson.is_completed).length;
-
-  const courseProgress =
-    lessons.length > 0
-      ? Math.round((completedLessons / lessons.length) * 100)
-      : 0;
-
+  const courseProgress = lessons.length > 0 ? Math.round((completedLessons / lessons.length) * 100) : 0;
   const currentLessonIndex = lessons.findIndex((l) => l.id === selectedLesson?.id);
   const currentLessonStatus = selectedLesson?.is_completed ? "completed" : "not_started";
 
-  const handleLessonSelect = (lesson) => {
-    setSelectedLesson(lesson);
-  };
+  const handleLessonSelect = (lesson) => setSelectedLesson(lesson);
 
   const handleNext = () => {
     if (currentLessonIndex < lessons.length - 1) {
-      const nextLesson = lessons[currentLessonIndex + 1];
-      setSelectedLesson(nextLesson);
+      setSelectedLesson(lessons[currentLessonIndex + 1]);
     }
   };
 
   const handleStartLesson = () => {
-    if (selectedLesson) {
-      setIsPlaying(true);
-    }
+    if (selectedLesson) setIsPlaying(true);
   };
 
   const getLessonType = (materials) => {
@@ -279,21 +271,10 @@ export default function EmployeeLesson() {
     return "";
   };
 
-  const getVideoMaterial = () => {
-    return materials.find((m) => m.material_type === "video" && m.video_url);
-  };
-
-  const getPdfMaterials = () => {
-    return materials.filter((m) => m.material_type === "pdf" && m.filename);
-  };
-
-  const getAudioMaterials = () => {
-    return materials.filter((m) => m.material_type === "audio" && m.filename);
-  };
-
-  const getTextMaterial = () => {
-    return materials.find((m) => m.material_type === "text" && m.text_content);
-  };
+  const getVideoMaterial = () => materials.find((m) => m.material_type === "video" && m.video_url);
+  const getPdfMaterials = () => materials.filter((m) => m.material_type === "pdf" && m.filename);
+  const getAudioMaterials = () => materials.filter((m) => m.material_type === "audio" && m.filename);
+  const getTextMaterial = () => materials.find((m) => m.material_type === "text" && m.text_content);
 
   const formatDescription = (text) => {
     if (!text) return "";
@@ -357,10 +338,7 @@ export default function EmployeeLesson() {
           <BookOpen className="w-8 h-8 text-[#1F4842]" />
         </div>
 
-        <p className="px-4 text-sm font-medium text-gray-800">
-          {course.title}
-        </p>
-
+        <p className="px-4 text-sm font-medium text-gray-800">{course.title}</p>
         <p className="mt-0.5 mb-2 px-4 text-xs text-gray-500">
           {lessons.length} Lessons · {courseProgress}%
         </p>
@@ -400,32 +378,16 @@ export default function EmployeeLesson() {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col bg-white p-6 overflow-y-auto">
-        {/* Lesson header */}
         <div className="mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {selectedLesson.title}
-          </h2>
-
+          <h2 className="text-xl font-semibold text-gray-900">{selectedLesson.title}</h2>
           <p className="mt-1 text-sm text-gray-500">
             Lesson {currentLessonIndex + 1} of {lessons.length}
-            {lessonType && (
-              <>
-                <span className="mx-1.5">·</span>
-                {lessonType}
-              </>
-            )}
-            {lessonDuration && (
-              <>
-                <span className="mx-1.5">·</span>
-                {lessonDuration}
-              </>
-            )}
+            {lessonType && <><span className="mx-1.5">·</span>{lessonType}</>}
+            {lessonDuration && <><span className="mx-1.5">·</span>{lessonDuration}</>}
           </p>
         </div>
 
-        {/* Content Area */}
         <div className="mb-4 space-y-4">
-          {/* VIDEO - Only show if there's an actual video URL */}
           {videoMaterial && (
             isPlaying ? (
               <div>
@@ -444,14 +406,8 @@ export default function EmployeeLesson() {
                     allowFullScreen
                   />
                 ) : (
-                  <video
-                    controls
-                    autoPlay
-                    className="w-full rounded-xl"
-                    style={{ maxHeight: "400px" }}
-                  >
-                    <source src={getFullUrl(videoMaterial.video_url)} />
-                    Your browser does not support the video element.
+                  <video controls autoPlay className="w-full rounded-xl" style={{ maxHeight: "400px" }}>
+                    <source src={videoMaterial.video_url} />
                   </video>
                 )}
               </div>
@@ -461,15 +417,10 @@ export default function EmployeeLesson() {
                 onClick={handleStartLesson}
               >
                 {thumbnailUrl ? (
-                  <img
-                    src={thumbnailUrl}
-                    alt={selectedLesson.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
+                  <img src={thumbnailUrl} alt={selectedLesson.title} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="absolute inset-0 bg-[#cce8e2]" />
                 )}
-
                 <div className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/40 transition-colors">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg hover:bg-white hover:scale-105 transition-all">
                     <Play className="w-6 h-6 text-[#1F4842] ml-0.5" />
@@ -479,27 +430,21 @@ export default function EmployeeLesson() {
             )
           )}
 
-          {/* PDF */}
           {pdfMaterials.length > 0 && (
             <div className="space-y-3">
               <p className="text-sm font-medium text-gray-700">Download Materials</p>
               {pdfMaterials.map((material) => (
-                <div
-                  key={material.id}
-                  className="flex items-center justify-between p-4 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]"
-                >
+                <div key={material.id} className="flex items-center justify-between p-4 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]">
                   <div className="flex items-center gap-3">
                     <FileText className="w-8 h-8 text-[#1F4842]" />
                     <div>
-                      <p className="text-sm font-medium text-gray-800">
-                        {material.filename || "Lesson Material"}
-                      </p>
+                      <p className="text-sm font-medium text-gray-800">{material.filename || "Lesson Material"}</p>
                       <p className="text-xs text-gray-500">PDF Document</p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleProtectedDownload(material)}
+                    onClick={() => handleDownload(material)}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1F4842] text-white text-sm hover:bg-[#17352e] transition-colors"
                   >
                     <FileDown className="w-4 h-4" />
@@ -510,40 +455,32 @@ export default function EmployeeLesson() {
             </div>
           )}
 
-          {/* AUDIO */}
           {audioMaterials.length > 0 && (
             <div className="space-y-3">
               <p className="text-sm font-medium text-gray-700">Audio Materials</p>
               {audioMaterials.map((material) => (
-                <div
-                  key={material.id}
-                  className="p-4 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]"
-                >
+                <div key={material.id} className="p-4 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]">
                   <div className="flex items-center gap-3 mb-3">
                     <Headphones className="w-8 h-8 text-[#1F4842]" />
                     <div>
-                      <p className="text-sm font-medium text-gray-800">
-                        {material.filename || "Audio Material"}
-                      </p>
+                      <p className="text-sm font-medium text-gray-800">{material.filename || "Audio Material"}</p>
                       <p className="text-xs text-gray-500">Audio</p>
                     </div>
                   </div>
-
                   <div>
                     {!audioSrcMap[material.id] && (
                       <button
                         type="button"
                         onClick={() => loadAudioSource(material)}
-                        className="mb-3 px-3 py-2 rounded-lg bg-[#1F4842] text-white text-sm hover:bg-[#17352e] transition-colors"
+                        disabled={audioLoadingMap[material.id]}
+                        className="mb-3 px-3 py-2 rounded-lg bg-[#1F4842] text-white text-sm hover:bg-[#17352e] transition-colors disabled:opacity-50"
                       >
-                        Load Audio
+                        {audioLoadingMap[material.id] ? "Loading..." : "Load Audio"}
                       </button>
                     )}
-
                     {audioSrcMap[material.id] && (
                       <audio controls className="w-full">
-                        <source src={audioSrcMap[material.id]} type="audio/mpeg" />
-                        Your browser does not support the audio element.
+                        <source src={audioSrcMap[material.id]} />
                       </audio>
                     )}
                   </div>
@@ -552,7 +489,6 @@ export default function EmployeeLesson() {
             </div>
           )}
 
-          {/* TEXT */}
           {textMaterial && (
             <div className="p-6 rounded-xl bg-[#f0f7f4] border border-[#cce8e2]">
               <div className="flex items-center gap-3 mb-4">
@@ -565,7 +501,6 @@ export default function EmployeeLesson() {
             </div>
           )}
 
-          {/* No content */}
           {!hasContent && (
             <div className="flex h-[280px] items-center justify-center rounded-2xl bg-[#cce8e2]">
               <p className="text-[#1F4842] text-sm">No content available for this lesson</p>
@@ -573,7 +508,6 @@ export default function EmployeeLesson() {
           )}
         </div>
 
-        {/* Action buttons */}
         <div className="flex items-center gap-2.5 mb-4 mt-auto">
           <Button
             variant="outline"
@@ -594,10 +528,7 @@ export default function EmployeeLesson() {
             </Button>
 
             {videoMaterial && (
-              <Button
-                className="bg-[#1F4842] text-white hover:bg-[#17352e]"
-                onClick={handleStartLesson}
-              >
+              <Button className="bg-[#1F4842] text-white hover:bg-[#17352e]" onClick={handleStartLesson}>
                 <Play className="w-4 h-4 mr-1.5" />
                 {hasStarted ? "Resume" : "Start"}
               </Button>
@@ -605,16 +536,10 @@ export default function EmployeeLesson() {
           </div>
         </div>
 
-        {/* Course description */}
         {selectedLesson.objective && (
           <div>
-            <h3 className="mb-1.5 text-base font-medium text-gray-900">
-              {course.title}
-            </h3>
-
-            <p className="text-sm leading-relaxed text-gray-500">
-              {formatDescription(selectedLesson.objective)}
-            </p>
+            <h3 className="mb-1.5 text-base font-medium text-gray-900">{course.title}</h3>
+            <p className="text-sm leading-relaxed text-gray-500">{formatDescription(selectedLesson.objective)}</p>
           </div>
         )}
       </div>
