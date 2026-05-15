@@ -548,6 +548,7 @@ export default function CreateCourse() {
                           e.stopPropagation();
                           startEditingLesson(lesson);
                         }}
+                        disabled={courseData.status === "published"}
                       >
                         <Pencil className="w-[13px] h-[13px] text-[#9a9a9a]" />
                       </button>
@@ -557,6 +558,7 @@ export default function CreateCourse() {
                           e.stopPropagation();
                           handleDeleteLesson(lesson.id);
                         }}
+                        disabled={courseData.status === "published"}
                       >
                         <Trash2 className="w-[13px] h-[13px] text-[#9a9a9a]" />
                       </button>
@@ -659,6 +661,7 @@ export default function CreateCourse() {
                     <button
                       onClick={() => setVideoUrl("")}
                       className="absolute right-3 top-1/2 -translate-y-1/2"
+                      disabled={courseData.status === "published"}
                     >
                       <X className="w-[13px] h-[13px] text-[#9a9a9a]" />
                     </button>
@@ -669,6 +672,7 @@ export default function CreateCourse() {
                   <button
                     onClick={handleAddVideo}
                     className="text-[11px] text-[#1f4842] mt-2 hover:underline"
+                    disabled={courseData.status === "published"}
                   >
                     Save Video URL
                   </button>
@@ -703,6 +707,7 @@ export default function CreateCourse() {
                   onChange={handleFileUpload}
                   className="hidden"
                   accept=".mp3,.wav,.pdf"
+                  disabled={courseData.status === "published"}
                 />
 
                 {isUploadingMaterial && (
@@ -735,11 +740,14 @@ export default function CreateCourse() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button>
+                        <button disabled={courseData.status === "published"}>
                           <Pencil className="w-[13px] h-[13px] text-[#8c8c8c]" />
                         </button>
 
-                        <button onClick={() => removeMaterial(material.id)}>
+                        <button
+                          onClick={() => removeMaterial(material.id)}
+                          disabled={courseData.status === "published"}
+                        >
                           <Trash2 className="w-[13px] h-[13px] text-[#8c8c8c]" />
                         </button>
                       </div>
@@ -752,7 +760,7 @@ export default function CreateCourse() {
               <div className="flex justify-end">
                 <Button
                   onClick={handleSaveLesson}
-                  disabled={!selectedLesson}
+                  disabled={!selectedLesson || courseData.status === "published"}
                   className="bg-[#1f4842] hover:bg-[#173a35] h-[34px] px-6 rounded-[4px] text-[12px] text-white"
                 >
                   Save

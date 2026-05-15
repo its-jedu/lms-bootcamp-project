@@ -1,6 +1,6 @@
 from rest_framework import status, viewsets
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -17,7 +17,7 @@ from apps.courses_app.serializers.materials import (
 )
 
 class MaterialViewSet(viewsets.ViewSet):
-    parser_classes = [MultiPartParser]
+    parser_classes = [MultiPartParser, JSONParser]
 
     def get_permissions(self):
         if self.action in ["create_file", "create_text", "create_video", "destroy"]:
