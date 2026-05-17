@@ -41,7 +41,7 @@ export default function Login() {
       {/* Left side Info section */}
       <div className=" bg-green-950 flex flex-1 items-center justify-center flex-col">
         <div className="flex flex-col items-start p-48">
-            <h1 className="text-green-100 text-5xl pb-4">Logo</h1>
+            <div className="flex justify-start"><img src="./Dark-variation-logo.png" alt="Skillminds logo" className="w-60" /></div>
             <h2 className="text-green-100 text-3xl pb-4">Unlock your Learning Potential</h2>
             <p className="text-green-100 text-xl m-0 p-0 text-left" >Sign in to continue your journey of growth and kowledge.
               Explore courses, track progress and achieve your goals
