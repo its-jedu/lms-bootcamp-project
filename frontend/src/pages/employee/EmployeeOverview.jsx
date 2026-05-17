@@ -47,9 +47,11 @@ export default function EmployeeOverview() {
   useEffect(() => {
     (async () => {
       try {
+        const user = JSON.parse(localStorage.getItem("user"));
+        const profileCacheKey = `employee_profile_${user.id || user.email}`;
         const profileResponse = await cachedApi.get("api/employee/profile/", {
           ttl: 10 * 60 * 1000,
-          cacheKey: "employee_profile",
+          cacheKey: profileCacheKey,
         });
 
         setEmployeeProfile(profileResponse.data);
